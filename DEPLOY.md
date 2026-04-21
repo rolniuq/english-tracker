@@ -1,32 +1,44 @@
 # English Learning Tracker - Deployment Guide
 
-## STEP 1: Deploy Backend (Render)
+## Frontend (Vercel) ✅ DONE
 
-1. Go to https://render.com and sign in with GitHub
-2. New Web Service → Select `english-tracker` repo
+Frontend is deployed at: **https://client-lovat-phi-40.vercel.app**
+
+---
+
+## STEP 1: Deploy Backend (Render) - DO THIS NOW
+
+1. Go to https://render.com → Sign in with GitHub
+2. **New Web Service** → Select `english-tracker` repo
 3. Settings:
+   - Name: `english-tracker-api`
    - Root Directory: `server`
    - Build Command: `npm install`
    - Start Command: `node server.js`
    - Environment: `Node`
 4. Add Environment Variable:
-   - Key: `PORT`
-   - Value: `3001`
-5. Click "Create Web Service"
-6. Wait 2-3 minutes for deployment
+   - Key: `PORT` → Value: `3001`
+5. Click **Create Web Service**
+6. Wait ~3 min for deployment
 7. **COPY YOUR BACKEND URL** (e.g., `english-tracker-api.onrender.com`)
+
+---
 
 ## STEP 2: Update Frontend Code
 
-Open `client/src/hooks/useSessions.ts` and change line 5:
+After Render deploys, open `client/src/hooks/useSessions.ts` and change line 5:
 
 ```javascript
+// From:
 const API_BASE = 'https://YOUR-RENDER-URL.onrender.com';
+
+// To your actual URL, e.g.:
+const API_BASE = 'https://english-tracker-api.onrender.com';
 ```
 
-Replace `YOUR-RENDER-URL.onrender.com` with your actual Render URL.
+---
 
-## STEP 3: Commit and Push
+## STEP 3: Push Updated Code
 
 ```bash
 git add .
@@ -34,31 +46,18 @@ git commit -m "Update API URL for production"
 git push origin main
 ```
 
-## STEP 4: Deploy Frontend (Vercel)
-
-1. Go to https://vercel.com and sign in with GitHub
-2. New Project → Import `english-tracker`
-3. Settings (should auto-detect):
-   - Framework Preset: `Vite`
-   - Root Directory: `client`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-4. Click "Deploy"
-
-## DONE!
-
-Your English Learning Tracker will be live at your Vercel URL.
+Vercel will auto-redeploy!
 
 ---
 
-## Important: SQLite Persistence on Render
+## DONE! 🚀
 
-⚠️ **Render's free tier sleeps after 15 min of inactivity!**
+Your app will be live at the Vercel URL.
 
-The database (`english-tracker.db`) will reset when the service sleeps.
+---
 
-**To fix this:**
-1. Upgrade to Render paid plan, OR
-2. Use a persistent database like Supabase PostgreSQL
+## Important: SQLite on Render
 
-For now, if data resets, just re-enter your sessions. This is a known free tier limitation.
+⚠️ **Render's free tier sleeps after 15 min!**
+
+Data will reset when service sleeps. This is a free tier limitation.
