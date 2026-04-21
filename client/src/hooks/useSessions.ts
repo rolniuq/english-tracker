@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Session } from '../types';
+import { Session, Attachment } from '../types';
 
 const API_BASE = 'https://english-tracker-api.fly.dev/api';
+
+interface SessionWithAttachments extends Session {
+  attachments: Attachment[];
+}
 
 export function useSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -26,7 +30,7 @@ export function useSessions() {
     fetchSessions();
   }, [fetchSessions]);
 
-  const getSession = useCallback(async (date: string): Promise<Session | null> => {
+  const getSession = useCallback(async (date: string): Promise<SessionWithAttachments | null> => {
     try {
       const res = await fetch(`${API_BASE}/sessions/${date}`);
       if (!res.ok) {
@@ -56,6 +60,23 @@ export function useSessions() {
     await fetchSessions();
   }, [fetchSessions]);
 
+  const uploadAttachment = useCallback(async (date: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('date', date);
+    const res = await fetch(`${API_BASE}/attachments/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!res.ok) throw new Error('Failed to upload file');
+    return res.json();
+  }, []);
+
+  const deleteAttachment = useCallback(async (id: number) => {
+    const res = await fetch(`${API_BASE}/attachments/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete attachment');
+  }, []);
+
   return {
     sessions,
     loading,
@@ -63,8 +84,8 @@ export function useSessions() {
     getSession,
     saveSession,
     deleteSession,
-    uploadAttachment: async () => {},
-    deleteAttachment: async () => {},
+    uploadAttachment,
+    deleteAttachment,
     refreshSessions: fetchSessions
   };
 }

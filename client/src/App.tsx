@@ -2,13 +2,17 @@ import { useState, useCallback } from 'react';
 import { useSessions } from './hooks/useSessions';
 import { Calendar } from './components/Calendar';
 import { SessionModal } from './components/SessionModal';
-import { Session } from './types';
+import { Session, Attachment } from './types';
 import './App.css';
 
+interface SessionWithAttachments extends Session {
+  attachments: Attachment[];
+}
+
 function App() {
-  const { sessions, getSession, saveSession, refreshSessions } = useSessions();
+  const { sessions, getSession, saveSession, uploadAttachment, deleteAttachment, refreshSessions } = useSessions();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [selectedSession, setSelectedSession] = useState<SessionWithAttachments | null>(null);
 
   const handleDayClick = useCallback(async (date: string) => {
     setSelectedDate(date);
@@ -28,6 +32,21 @@ function App() {
     refreshSessions();
   }, [selectedDate, saveSession, refreshSessions, handleClose]);
 
+  const handleUpload = useCallback(async (file: File) => {
+    if (!selectedDate) return;
+    await uploadAttachment(selectedDate, file);
+    const updated = await getSession(selectedDate);
+    setSelectedSession(updated);
+  }, [selectedDate, uploadAttachment, getSession]);
+
+  const handleDeleteAttachment = useCallback(async (id: number) => {
+    await deleteAttachment(id);
+    if (selectedDate) {
+      const updated = await getSession(selectedDate);
+      setSelectedSession(updated);
+    }
+  }, [deleteAttachment, getSession, selectedDate]);
+
   return (
     <div className="app">
       <header>
@@ -44,8 +63,8 @@ function App() {
           session={selectedSession}
           onClose={handleClose}
           onSave={handleSave}
-          onUpload={async () => {}}
-          onDeleteAttachment={async () => {}}
+          onUpload={handleUpload}
+          onDeleteAttachment={handleDeleteAttachment}
         />
       )}
     </div>

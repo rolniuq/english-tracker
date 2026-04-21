@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Session } from '../types';
+import { useState, useEffect, useRef } from 'react';
+import { Session, Attachment } from '../types';
 
 interface SessionModalProps {
   date: string;
-  session: Session | null;
+  session: (Session & { attachments?: Attachment[] }) | null;
   onClose: () => void;
   onSave: (attended: number, isOff: number, notes: string) => void;
   onUpload?: (file: File) => void;
@@ -15,24 +15,54 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
 export function SessionModal({
   date,
   session,
   onClose,
-  onSave
+  onSave,
+  onUpload,
+  onDeleteAttachment
 }: SessionModalProps) {
   const [attended, setAttended] = useState(session?.attended === 1);
   const [isOff, setIsOff] = useState(session?.is_off === 1);
   const [notes, setNotes] = useState(session?.notes || '');
+  const [attachments, setAttachments] = useState<Attachment[]>(session?.attachments || []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     setAttended(session?.attended === 1);
     setIsOff(session?.is_off === 1);
     setNotes(session?.notes || '');
+    setAttachments(session?.attachments || []);
   }, [session]);
 
   const handleSave = () => {
     onSave(attended ? 1 : 0, isOff ? 1 : 0, notes);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onUpload) return;
+    setUploading(true);
+    try {
+      await onUpload(file);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteFile = async (id: number) => {
+    if (!onDeleteAttachment) return;
+    await onDeleteAttachment(id);
+    setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
   return (
@@ -69,6 +99,38 @@ export function SessionModal({
               onChange={e => setNotes(e.target.value)}
               placeholder="Write your notes here..."
             />
+          </div>
+
+          <div className="attachments-section">
+            <label>Attachments:</label>
+            <div className="attachments-list">
+              {attachments.map(file => (
+                <div key={file.id} className="attachment-item">
+                  <a
+                    href={`https://english-tracker-api.fly.dev/api/attachments/${file.id}/download`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="attachment-link"
+                  >
+                    {file.filename} ({formatFileSize(file.size)})
+                  </a>
+                  <button
+                    className="delete-file-btn"
+                    onClick={() => handleDeleteFile(file.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+              {attachments.length === 0 && <p className="no-attachments">No attachments</p>}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileUpload}
+              disabled={uploading}
+            />
+            {uploading && <span>Uploading...</span>}
           </div>
         </div>
 

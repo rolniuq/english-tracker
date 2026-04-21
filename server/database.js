@@ -14,6 +14,17 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL,
+    filename TEXT NOT NULL,
+    filepath TEXT NOT NULL,
+    mimetype TEXT DEFAULT '',
+    size INTEGER DEFAULT 0,
+    uploaded_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+  );
 `);
 
 export function getAllSessions() {
@@ -40,4 +51,25 @@ export function createOrUpdateSession(date, attended = 0, isOff = 0, notes = '')
 
 export function deleteSession(date) {
   return db.prepare('DELETE FROM sessions WHERE date = ?').run(date);
+}
+
+export function getAttachmentsBySessionId(sessionId) {
+  return db.prepare('SELECT * FROM attachments WHERE session_id = ? ORDER BY uploaded_at DESC').all(sessionId);
+}
+
+export function createAttachment(sessionId, filename, filepath, mimetype, size) {
+  const stmt = db.prepare(`
+    INSERT INTO attachments (session_id, filename, filepath, mimetype, size)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(sessionId, filename, filepath, mimetype, size);
+  return db.prepare('SELECT * FROM attachments WHERE id = ?').get(result.lastInsertRowid);
+}
+
+export function getAttachmentById(id) {
+  return db.prepare('SELECT * FROM attachments WHERE id = ?').get(id);
+}
+
+export function deleteAttachment(id) {
+  return db.prepare('DELETE FROM attachments WHERE id = ?').run(id);
 }
