@@ -68,11 +68,7 @@ function Game2048() {
       let moved = false;
       let points = 0;
 
-      const rotate = (grid: number[][]) => {
-        return grid[0].map((_, i) => grid.map(row => row[i]).reverse());
-      };
-
-      const slide = (row: number[]) => {
+      const slideLeft = (row: number[]) => {
         let arr = row.filter(x => x !== 0);
         for (let i = 0; i < arr.length - 1; i++) {
           if (arr[i] === arr[i + 1]) {
@@ -85,16 +81,29 @@ function Game2048() {
         return arr;
       };
 
-      if (dir === 'right') newGrid = newGrid.map(row => slide(row.reverse()).reverse());
-      else if (dir === 'left') newGrid = newGrid.map(row => slide(row));
-      else if (dir === 'up') {
-        newGrid = rotate(newGrid);
-        newGrid = newGrid.map(row => slide(row));
-        newGrid = rotate(rotate(rotate(newGrid)));
+      const getCol = (grid: number[][], c: number) => grid.map(row => row[c]);
+      const setCol = (grid: number[][], c: number, col: number[]) => {
+        const result = grid.map(row => [...row]);
+        for (let r = 0; r < 4; r++) result[r][c] = col[r];
+        return result;
+      };
+
+      if (dir === 'left') {
+        newGrid = newGrid.map(row => slideLeft(row));
+      } else if (dir === 'right') {
+        newGrid = newGrid.map(row => slideLeft(row.reverse()).reverse());
+      } else if (dir === 'up') {
+        for (let c = 0; c < 4; c++) {
+          const col = getCol(newGrid, c);
+          const newCol = slideLeft(col);
+          newGrid = setCol(newGrid, c, newCol);
+        }
       } else if (dir === 'down') {
-        newGrid = rotate(rotate(newGrid));
-        newGrid = newGrid.map(row => slide(row));
-        newGrid = rotate(rotate(newGrid));
+        for (let c = 0; c < 4; c++) {
+          const col = getCol(newGrid, c);
+          const newCol = slideLeft(col.reverse()).reverse();
+          newGrid = setCol(newGrid, c, newCol);
+        }
       }
 
       for (let r = 0; r < 4; r++) {

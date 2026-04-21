@@ -7,23 +7,31 @@ interface Pet {
   lane: number;
   position: number;
   speed: number;
+  weatherAffinity: Record<string, number>;
 }
 
 const WEATHER_TYPES = [
-  { name: 'Sunny', bg: 'linear-gradient(to bottom, #87CEEB, #98FB98)', boost: 1 },
-  { name: 'Rain', bg: 'linear-gradient(to bottom, #4a5568, #2d3748)', speedMod: 0.8 },
-  { name: 'Wind', bg: 'linear-gradient(to bottom, #a0aec0, #cbd5e0)', speedMod: 1.3 },
-  { name: 'Storm', bg: 'linear-gradient(to bottom, #2d3748, #1a202c)', speedMod: 0.6 },
-  { name: 'Snow', bg: 'linear-gradient(to bottom, #e2e8f0, #f7fafc)', speedMod: 0.9 },
-  { name: 'Night', bg: 'linear-gradient(to bottom, #1a202c, #2d3748)', speedMod: 1.1 },
+  { name: 'Sunny', bg: 'linear-gradient(to bottom, #87CEEB 0%, #98FB98 50%, #228B22 100%)', icon: '☀️', desc: 'Clear sky' },
+  { name: 'Rain', bg: 'linear-gradient(to bottom, #4a5568 0%, #2d3748 100%)', icon: '🌧️', desc: 'Heavy rain' },
+  { name: 'Wind', bg: 'linear-gradient(to bottom, #a0aec0 0%, #cbd5e0 100%)', icon: '💨', desc: 'Strong wind' },
+  { name: 'Storm', bg: 'linear-gradient(to bottom, #2d3748 0%, #1a202c 100%)', icon: '⛈️', desc: 'Thunderstorm' },
+  { name: 'Snow', bg: 'linear-gradient(to bottom, #e2e8f0 0%, #f7fafc 100%)', icon: '❄️', desc: 'Snowing' },
+  { name: 'Night', bg: 'linear-gradient(to bottom, #1a202c 0%, #2d3748 100%)', icon: '🌙', desc: 'Moonlight' },
+  { name: 'Fog', bg: 'linear-gradient(to bottom, #9ca3af 0%, #d1d5db 100%)', icon: '🌫️', desc: 'Foggy' },
+  { name: 'Heat', bg: 'linear-gradient(to bottom, #f6ad55 0%, #ed8936 100%)', icon: '🔥', desc: 'Scorching heat' },
+];
+
+const PET_TYPES = [
+  { emoji: '🐕', name: 'Dog', baseSpeed: 3.2, weatherAffinity: { Sunny: 1.2, Rain: 0.9, Wind: 1.1, Storm: 0.7, Snow: 0.8, Night: 1.0, Fog: 1.0, Heat: 0.9 } },
+  { emoji: '🐈', name: 'Cat', baseSpeed: 3.8, weatherAffinity: { Sunny: 1.1, Rain: 0.6, Wind: 1.0, Storm: 0.5, Snow: 0.7, Night: 1.3, Fog: 1.1, Heat: 1.2 } },
+  { emoji: '🦆', name: 'Duck', baseSpeed: 3.0, weatherAffinity: { Sunny: 1.0, Rain: 1.4, Wind: 0.9, Storm: 1.1, Snow: 0.6, Night: 1.0, Fog: 0.9, Heat: 0.8 } },
+  { emoji: '🐇', name: 'Bunny', baseSpeed: 3.5, weatherAffinity: { Sunny: 1.0, Rain: 0.7, Wind: 0.8, Storm: 0.6, Snow: 1.2, Night: 1.1, Fog: 1.0, Heat: 0.7 } },
+  { emoji: '🦊', name: 'Fox', baseSpeed: 3.6, weatherAffinity: { Sunny: 0.9, Rain: 1.0, Wind: 1.2, Storm: 0.8, Snow: 1.1, Night: 1.4, Fog: 1.2, Heat: 0.8 } },
+  { emoji: '🐢', name: 'Turtle', baseSpeed: 2.0, weatherAffinity: { Sunny: 1.3, Rain: 1.2, Wind: 0.9, Storm: 1.0, Snow: 1.1, Night: 1.0, Fog: 1.0, Heat: 0.6 } },
 ];
 
 function PetRace() {
-  const [pets, setPets] = useState<Pet[]>([
-    { emoji: '🐕', name: 'Dog', baseSpeed: 3, lane: 0, position: 0, speed: 3 },
-    { emoji: '🐈', name: 'Cat', baseSpeed: 3.5, lane: 1, position: 0, speed: 3.5 },
-    { emoji: '🦆', name: 'Duck', baseSpeed: 3.2, lane: 2, position: 0, speed: 3.2 },
-  ]);
+  const [pets, setPets] = useState<Pet[]>([]);
   const [weather, setWeather] = useState(0);
   const [isRacing, setIsRacing] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
@@ -31,40 +39,73 @@ function PetRace() {
   const [showRace, setShowRace] = useState(false);
   const [betOn, setBetOn] = useState<string | null>(null);
   const [betResult, setBetResult] = useState<string | null>(null);
-  const [distance] = useState(100);
+  const [distance] = useState(250);
+  const [weatherTimer, setWeatherTimer] = useState(0);
   const animationRef = useRef<number | null>(null);
+  const weatherIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const shuffled = [...PET_TYPES].sort(() => Math.random() - 0.5).slice(0, 4);
+    setPets(shuffled.map((p, i) => ({ ...p, lane: i, position: 0, speed: p.baseSpeed })));
+  }, []);
+
+  useEffect(() => {
+    if (isRacing && !winner) {
+      weatherIntervalRef.current = window.setInterval(() => {
+        setWeatherTimer(t => {
+          if (t >= 5) {
+            setWeather(Math.floor(Math.random() * WEATHER_TYPES.length));
+            return 0;
+          }
+          return t + 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (weatherIntervalRef.current) clearInterval(weatherIntervalRef.current);
+    };
+  }, [isRacing, winner]);
+
+  const getWeatherEffect = (pet: Pet) => {
+    const weatherName = WEATHER_TYPES[weather].name;
+    return pet.weatherAffinity[weatherName] || 1;
+  };
 
   const startRace = () => {
     setIsRacing(true);
     setWinner(null);
     setRaceTime(0);
+    setWeatherTimer(0);
     setBetResult(null);
+    setWeather(0);
     setPets(prev => prev.map(p => ({ ...p, position: 0, speed: p.baseSpeed })));
     
-    const race = () => {
-      setRaceTime(t => t + 1);
+    let lastTime = performance.now();
+    
+    const race = (currentTime: number) => {
+      const deltaTime = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+      
+      setRaceTime(t => t + deltaTime);
       
       setPets(prev => {
-        const weatherMod = WEATHER_TYPES[weather].speedMod || 1;
-        
         const newPets = prev.map(pet => {
-          const randomVariation = 0.8 + Math.random() * 0.4;
-          const newPos = pet.position + (pet.speed * weatherMod * randomVariation * 0.15);
-          
-          if (newPos >= distance && !winner) {
-            setWinner(pet.name);
-            setIsRacing(false);
-            if (betOn === pet.name) {
-              setBetResult('win');
-            } else if (betOn) {
-              setBetResult('lose');
-            }
-          }
+          const weatherMod = getWeatherEffect(pet);
+          const randomVariation = 0.85 + Math.random() * 0.3;
+          const newPos = pet.position + (pet.speed * weatherMod * randomVariation * deltaTime * 3);
           
           return { ...pet, position: newPos };
         });
         
-        if (newPets.some(p => p.position >= distance)) {
+        const finishedPet = newPets.find(p => p.position >= distance);
+        if (finishedPet && !winner) {
+          setWinner(finishedPet.name);
+          setIsRacing(false);
+          if (betOn === finishedPet.name) {
+            setBetResult('win');
+          } else if (betOn) {
+            setBetResult('lose');
+          }
           return newPets;
         }
         
@@ -78,39 +119,36 @@ function PetRace() {
 
   const changeWeather = () => {
     setWeather(prev => (prev + 1) % WEATHER_TYPES.length);
+    setWeatherTimer(0);
   };
 
   const resetRace = () => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (weatherIntervalRef.current) clearInterval(weatherIntervalRef.current);
     setIsRacing(false);
     setWinner(null);
     setRaceTime(0);
+    setWeatherTimer(0);
     setBetResult(null);
-    setPets([
-      { emoji: '🐕', name: 'Dog', baseSpeed: 3, lane: 0, position: 0, speed: 3 },
-      { emoji: '🐈', name: 'Cat', baseSpeed: 3.5, lane: 1, position: 0, speed: 3.5 },
-      { emoji: '🦆', name: 'Duck', baseSpeed: 3.2, lane: 2, position: 0, speed: 3.2 },
-    ]);
+    setWeather(0);
+    const shuffled = [...PET_TYPES].sort(() => Math.random() - 0.5).slice(0, 4);
+    setPets(shuffled.map((p, i) => ({ ...p, lane: i, position: 0, speed: p.baseSpeed })));
   };
 
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      if (weatherIntervalRef.current) clearInterval(weatherIntervalRef.current);
     };
   }, []);
 
   const cyclePet = (index: number) => {
-    const emojis = ['🐕', '🐈', '🐱', '🐶', '🦆', '🐸', '🐦', '🐧', '🦜', '🐢', '🐉', '🦄'];
-    const currentIndex = emojis.indexOf(pets[index].emoji);
-    const nextEmoji = emojis[(currentIndex + 1) % emojis.length];
+    const currentIndex = PET_TYPES.findIndex(p => p.name === pets[index].name);
+    const nextIndex = (currentIndex + 1) % PET_TYPES.length;
     
     setPets(prev => {
       const newPets = [...prev];
-      newPets[index] = { ...newPets[index], emoji: nextEmoji };
+      newPets[index] = { ...PET_TYPES[nextIndex], lane: index, position: prev[index].position, speed: PET_TYPES[nextIndex].baseSpeed };
       return newPets;
     });
   };
@@ -139,7 +177,7 @@ function PetRace() {
           justify-content: space-between;
           align-items: center;
           padding: 15px 30px;
-          background: rgba(0,0,0,0.3);
+          background: rgba(0,0,0,0.4);
         }
         
         .race-title {
@@ -165,32 +203,44 @@ function PetRace() {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          gap: 20px;
-          padding: 0 100px;
+          gap: 15px;
+          padding: 0 150px;
         }
         
         .finish-flag {
           position: absolute;
-          right: 80px;
+          right: 120px;
           top: 0;
           bottom: 0;
-          width: 20px;
+          width: 30px;
           background: repeating-linear-gradient(
             45deg,
             white,
-            white 10px,
-            black 10px,
-            black 20px
+            white 15px,
+            black 15px,
+            black 30px
           );
+        }
+        
+        .finish-line-label {
+          position: absolute;
+          right: 100px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: white;
+          font-weight: bold;
+          font-size: 18px;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
         
         .racetrack {
           display: flex;
           align-items: center;
-          height: 80px;
-          background: rgba(255,255,255,0.1);
+          height: 70px;
+          background: rgba(255,255,255,0.15);
           border-radius: 10px;
           position: relative;
+          border: 2px solid rgba(255,255,255,0.2);
         }
         
         .lanemarkers {
@@ -217,38 +267,50 @@ function PetRace() {
         }
         
         .racer {
-          font-size: 50px;
+          font-size: 45px;
           position: absolute;
           transition: left 0.1s linear;
           cursor: pointer;
           filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.3));
         }
         
+        .racer:hover {
+          transform: scale(1.1);
+        }
+        
         .racer-info {
           position: absolute;
           left: 10px;
           color: white;
-          font-size: 14px;
-          background: rgba(0,0,0,0.5);
-          padding: 3px 8px;
+          font-size: 13px;
+          background: rgba(0,0,0,0.6);
+          padding: 3px 10px;
           border-radius: 4px;
           white-space: nowrap;
         }
         
+        .racer-weather-effect {
+          position: absolute;
+          left: 10px;
+          top: 45px;
+          font-size: 16px;
+          animation: bounce 0.5s infinite;
+        }
+        
         .progress-bar {
-          width: 200px;
-          height: 8px;
+          width: 180px;
+          height: 6px;
           background: rgba(255,255,255,0.3);
-          border-radius: 4px;
+          border-radius: 3px;
           position: absolute;
           left: 80px;
-          top: 55px;
+          top: 50px;
         }
         
         .progress-fill {
           height: 100%;
           background: #4ade80;
-          border-radius: 4px;
+          border-radius: 3px;
           transition: width 0.1s linear;
         }
         
@@ -257,7 +319,8 @@ function PetRace() {
           gap: 15px;
           justify-content: center;
           padding: 20px;
-          background: rgba(0,0,0,0.3);
+          background: rgba(0,0,0,0.4);
+          flex-wrap: wrap;
         }
         
         .bet-btn {
@@ -267,7 +330,7 @@ function PetRace() {
           border-radius: 10px;
           cursor: pointer;
           transition: all 0.2s;
-          background: rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.15);
           color: white;
         }
         
@@ -285,7 +348,7 @@ function PetRace() {
           gap: 15px;
           justify-content: center;
           padding: 20px;
-          background: rgba(0,0,0,0.3);
+          background: rgba(0,0,0,0.4);
         }
         
         .race-btn-full {
@@ -332,33 +395,47 @@ function PetRace() {
           to { transform: translate(-50%, -50%) scale(1); }
         }
         
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        
         .race-weather-info {
           position: absolute;
           top: 80px;
           left: 50%;
           transform: translateX(-50%);
-          background: rgba(0,0,0,0.6);
+          background: rgba(0,0,0,0.7);
           color: white;
-          padding: 10px 20px;
-          border-radius: 8px;
-          font-size: 16px;
+          padding: 12px 24px;
+          border-radius: 10px;
+          font-size: 18px;
+          text-align: center;
+          border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .weather-change-timer {
+          font-size: 14px;
+          opacity: 0.8;
+          margin-top: 5px;
         }
         
         .race-timer {
           position: absolute;
           top: 80px;
-          right: 150px;
-          background: rgba(0,0,0,0.6);
+          right: 180px;
+          background: rgba(0,0,0,0.7);
           color: white;
           padding: 10px 20px;
           border-radius: 8px;
-          font-size: 20px;
+          font-size: 22px;
           font-weight: bold;
+          border: 2px solid rgba(255,255,255,0.3);
         }
         
         .race-toggle-btn {
           position: fixed;
-          bottom: 70px;
+          bottom: 20px;
           right: 20px;
           z-index: 9999;
           background: linear-gradient(135deg, #FF6B6B, #FF8E53);
@@ -375,13 +452,19 @@ function PetRace() {
         .race-toggle-btn:hover {
           transform: scale(1.05);
         }
+        
+        .pet-stats {
+          font-size: 12px;
+          color: #ffd700;
+          margin-left: 5px;
+        }
       `}</style>
       
       <button 
         className="race-btn-full race-toggle-btn"
         onClick={() => setShowRace(true)}
       >
-        🏁 Race
+        🏁 Pet Race
       </button>
       
       {showRace && (
@@ -392,43 +475,53 @@ function PetRace() {
           <div className="race-header">
             <div className="race-title">🐾 Pet Race 2026 🐾</div>
             <button className="weather-btn" onClick={changeWeather}>
-              🌤️ {WEATHER_TYPES[weather].name}
+              {WEATHER_TYPES[weather].icon} {WEATHER_TYPES[weather].name}
             </button>
           </div>
           
           <div className="race-track">
             <div className="finish-flag"></div>
+            <div className="finish-line-label">🏁 FINISH</div>
             <div className="race-weather-info">
-              🌡️ Weather: {WEATHER_TYPES[weather].name}
-              {WEATHER_TYPES[weather].speedMod !== 1 && (
-                <span> ({WEATHER_TYPES[weather].speedMod! > 1 ? '🚀' : '🐢'} {WEATHER_TYPES[weather].speedMod! > 1 ? '+' : ''}{Math.round((WEATHER_TYPES[weather].speedMod! - 1) * 100)}%)
-              </span>
-              )}
+              <div>{WEATHER_TYPES[weather].icon} {WEATHER_TYPES[weather].name}</div>
+              <div>{WEATHER_TYPES[weather].desc}</div>
+              {isRacing && <div className="weather-change-timer">⏱️ Weather change in {5 - weatherTimer}s</div>}
             </div>
-            <div className="race-timer">⏱️ {raceTime}s</div>
+            <div className="race-timer">⏱️ {raceTime.toFixed(1)}s</div>
             
-            {pets.map((pet, index) => (
-              <div key={index} className="racetrack">
-                <div className="lanemarkers"></div>
-                <div className="racer-info" style={{ top: -25 }}>{pet.name}</div>
-                {isRacing && (
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${Math.min(pet.position, 100)}%` }}></div>
+            {pets.map((pet, index) => {
+              const weatherEffect = getWeatherEffect(pet);
+              const effectIcon = weatherEffect > 1.1 ? '🚀' : weatherEffect < 0.9 ? '🐢' : '➡️';
+              const effectText = weatherEffect > 1.1 ? `+${Math.round((weatherEffect - 1) * 100)}%` : weatherEffect < 0.9 ? `${Math.round((weatherEffect - 1) * 100)}%` : 'normal';
+              
+              return (
+                <div key={index} className="racetrack">
+                  <div className="lanemarkers"></div>
+                  <div className="racer-info" style={{ top: -25 }}>{pet.name}</div>
+                  {isRacing && (
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${Math.min(pet.position / distance * 100, 100)}%` }}></div>
+                    </div>
+                  )}
+                  <div 
+                    className="racer" 
+                    style={{ 
+                      left: `calc(${Math.min(pet.position / distance * 88, 88)}% + 10px)`,
+                      transform: `scaleX(${pet.position > 0 ? 1 : -1})`
+                    }}
+                    onClick={() => !isRacing && cyclePet(index)}
+                    title={!isRacing ? 'Click to change pet' : pet.name}
+                  >
+                    {pet.emoji}
                   </div>
-                )}
-                <div 
-                  className="racer" 
-                  style={{ 
-                    left: `calc(${Math.min(pet.position / distance * 85, 85)}% + 10px)`,
-                    transform: `scaleX(${pet.position > 0 ? 1 : -1})`
-                  }}
-                  onClick={() => cyclePet(index)}
-                  title="Click to change"
-                >
-                  {pet.emoji}
+                  {isRacing && (
+                    <div className="racer-weather-effect" style={{ left: `calc(${Math.min(pet.position / distance * 88, 88)}% + 15px)` }}>
+                      {effectIcon} {effectText}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
           {!isRacing && !winner && (
