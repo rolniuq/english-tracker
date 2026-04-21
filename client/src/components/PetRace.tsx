@@ -22,12 +22,12 @@ const WEATHER_TYPES = [
 ];
 
 const PET_TYPES = [
-  { emoji: '🐕', name: 'Dog', baseSpeed: 3.2, weatherAffinity: { Sunny: 1.2, Rain: 0.9, Wind: 1.1, Storm: 0.7, Snow: 0.8, Night: 1.0, Fog: 1.0, Heat: 0.9 } },
-  { emoji: '🐈', name: 'Cat', baseSpeed: 3.8, weatherAffinity: { Sunny: 1.1, Rain: 0.6, Wind: 1.0, Storm: 0.5, Snow: 0.7, Night: 1.3, Fog: 1.1, Heat: 1.2 } },
+  { emoji: '🐕', name: 'Dog', baseSpeed: 2.8, weatherAffinity: { Sunny: 1.2, Rain: 0.9, Wind: 1.1, Storm: 0.7, Snow: 0.8, Night: 1.0, Fog: 1.0, Heat: 0.9 } },
+  { emoji: '🐈', name: 'Cat', baseSpeed: 2.9, weatherAffinity: { Sunny: 1.1, Rain: 0.6, Wind: 1.0, Storm: 0.5, Snow: 0.7, Night: 1.3, Fog: 1.1, Heat: 1.2 } },
   { emoji: '🦆', name: 'Duck', baseSpeed: 3.0, weatherAffinity: { Sunny: 1.0, Rain: 1.4, Wind: 0.9, Storm: 1.1, Snow: 0.6, Night: 1.0, Fog: 0.9, Heat: 0.8 } },
-  { emoji: '🐇', name: 'Bunny', baseSpeed: 3.5, weatherAffinity: { Sunny: 1.0, Rain: 0.7, Wind: 0.8, Storm: 0.6, Snow: 1.2, Night: 1.1, Fog: 1.0, Heat: 0.7 } },
-  { emoji: '🦊', name: 'Fox', baseSpeed: 3.6, weatherAffinity: { Sunny: 0.9, Rain: 1.0, Wind: 1.2, Storm: 0.8, Snow: 1.1, Night: 1.4, Fog: 1.2, Heat: 0.8 } },
-  { emoji: '🐢', name: 'Turtle', baseSpeed: 2.0, weatherAffinity: { Sunny: 1.3, Rain: 1.2, Wind: 0.9, Storm: 1.0, Snow: 1.1, Night: 1.0, Fog: 1.0, Heat: 0.6 } },
+  { emoji: '🐇', name: 'Bunny', baseSpeed: 3.1, weatherAffinity: { Sunny: 1.0, Rain: 0.7, Wind: 0.8, Storm: 0.6, Snow: 1.2, Night: 1.1, Fog: 1.0, Heat: 0.7 } },
+  { emoji: '🦊', name: 'Fox', baseSpeed: 3.0, weatherAffinity: { Sunny: 0.9, Rain: 1.0, Wind: 1.2, Storm: 0.8, Snow: 1.1, Night: 1.4, Fog: 1.2, Heat: 0.8 } },
+  { emoji: '🐢', name: 'Turtle', baseSpeed: 3.2, weatherAffinity: { Sunny: 1.3, Rain: 1.2, Wind: 0.9, Storm: 1.0, Snow: 1.1, Night: 1.0, Fog: 1.0, Heat: 0.6 } },
 ];
 
 function PetRace() {

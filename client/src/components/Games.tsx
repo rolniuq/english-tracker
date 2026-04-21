@@ -231,9 +231,13 @@ function SlidingPuzzle() {
   const [moves, setMoves] = useState(0);
   const [showPuzzle, setShowPuzzle] = useState(false);
   const [won, setWon] = useState(false);
+  const [gridSize, setGridSize] = useState(4);
+  const [level, setLevel] = useState(1);
 
-  const init = useCallback(() => {
-    const t = Array.from({ length: 16 }, (_, i) => ({ id: i + 1, pos: i }));
+  const init = useCallback((size?: number) => {
+    const actualSize = size || gridSize;
+    const totalTiles = actualSize * actualSize;
+    const t = Array.from({ length: totalTiles }, (_, i) => ({ id: i + 1, pos: i }));
     for (let i = t.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [t[i], t[j]] = [t[j], t[i]];
@@ -241,22 +245,33 @@ function SlidingPuzzle() {
     setTiles(t);
     setMoves(0);
     setWon(false);
-  }, []);
+  }, [gridSize]);
 
   useEffect(() => {
     if (showPuzzle && tiles.length === 0) init();
   }, [showPuzzle, tiles.length, init]);
 
+  const nextLevel = () => {
+    if (gridSize < 6) {
+      setGridSize(s => s + 1);
+      setTimeout(() => init(gridSize + 1), 500);
+    } else {
+      setGridSize(4);
+      setLevel(l => l + 1);
+      setTimeout(() => init(4), 500);
+    }
+  };
+
   const move = (pos: number) => {
     if (won || tiles.length === 0) return;
-    const empty = tiles.find(t => t.id === 16);
+    const empty = tiles.find(t => t.id === gridSize * gridSize);
     const clicked = tiles.find(t => t.pos === pos);
     if (!empty || !clicked) return;
     
-    const emptyRow = Math.floor(empty.pos / 4);
-    const emptyCol = empty.pos % 4;
-    const clickedRow = Math.floor(clicked.pos / 4);
-    const clickedCol = clicked.pos % 4;
+    const emptyRow = Math.floor(empty.pos / gridSize);
+    const emptyCol = empty.pos % gridSize;
+    const clickedRow = Math.floor(clicked.pos / gridSize);
+    const clickedCol = clicked.pos % gridSize;
     const isAdjacent = (emptyRow === clickedRow && Math.abs(emptyCol - clickedCol) === 1) ||
                        (emptyCol === clickedCol && Math.abs(emptyRow - clickedRow) === 1);
     if (!isAdjacent) return;
@@ -267,7 +282,10 @@ function SlidingPuzzle() {
         t.id === empty.id ? { ...t, pos: clicked.pos } : t
       );
       const solved = newTiles.every(t => t.pos === t.id - 1);
-      if (solved) setWon(true);
+      if (solved) {
+        setWon(true);
+        setTimeout(nextLevel, 1500);
+      }
       return newTiles;
     });
     setMoves(m => m + 1);
@@ -287,10 +305,10 @@ function SlidingPuzzle() {
           position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
           background: #bbada0; padding: 15px; border-radius: 10px; z-index: 10001;
         }
-        .puz-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 280px; height: 280px; }
+        .puz-grid { display: grid; gap: 6px; }
         .puz-tile {
           display: flex; align-items: center; justify-content: center;
-          border-radius: 6px; font-size: 24px; font-weight: bold;
+          border-radius: 4px; font-weight: bold;
           cursor: pointer; transition: all 0.15s;
         }
         .puz-tile-empty { background: #cdc1b4; cursor: default; }
@@ -302,41 +320,54 @@ function SlidingPuzzle() {
         .puz-btn2 { padding: 10px 20px; background: #8f7a66; color: white; border: none; border-radius: 6px; cursor: pointer; }
         .puz-close { position: absolute; top: -40px; right: 0; background: #ff6b6b; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; }
       `}</style>
-      <button className="puz-btn" onClick={() => setShowPuzzle(true)}>🧩 Puzzle 15</button>
+      <button className="puz-btn" onClick={() => setShowPuzzle(true)}>🧩 Puzzle {gridSize}x{gridSize}</button>
       
       {showPuzzle && (
         <>
           <div className="puz-overlay" onClick={() => setShowPuzzle(false)} />
           <div className="puz-box">
             <button className="puz-close" onClick={() => setShowPuzzle(false)}>✕</button>
-            <div className="puz-header" style={{ fontSize: 24, fontWeight: 'bold' }}>🧩 Sliding Puzzle</div>
-            <div className="puz-stats">Moves: {moves} {won && '🎉 SOLVED!'}</div>
-            <div className="puz-grid">
-              {Array.from({ length: 16 }, (_, pos) => {
+            <div className="puz-header" style={{ fontSize: 24, fontWeight: 'bold' }}>
+              🧩 Puzzle {gridSize}x{gridSize} {level > 1 && `(Level ${level})`}
+            </div>
+            <div className="puz-stats">Moves: {moves} {won && '🎉 Next Level!'}</div>
+            <div 
+              className="puz-grid"
+              style={{ 
+                gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+                width: `${gridSize * 60}px`,
+                height: `${gridSize * 60}px`
+              }}
+            >
+              {Array.from({ length: gridSize * gridSize }, (_, pos) => {
                 if (tiles.length === 0) return <div key={pos} className="puz-tile"></div>;
                 const tile = tiles.find(t => t.pos === pos);
-                const empty = tiles.find(t => t.id === 16);
+                const empty = tiles.find(t => t.id === gridSize * gridSize);
                 if (!empty) return <div key={pos} className="puz-tile"></div>;
-                const emptyRow = Math.floor(empty.pos / 4);
-                const emptyCol = empty.pos % 4;
-                const tileRow = Math.floor(pos / 4);
-                const tileCol = pos % 4;
+                const emptyRow = Math.floor(empty.pos / gridSize);
+                const emptyCol = empty.pos % gridSize;
+                const tileRow = Math.floor(pos / gridSize);
+                const tileCol = pos % gridSize;
                 const canMove = (emptyRow === tileRow && Math.abs(emptyCol - tileCol) === 1) ||
                                  (emptyCol === tileCol && Math.abs(emptyRow - tileRow) === 1);
+                const maxVal = gridSize * gridSize - 1;
                 return (
                   <div
                     key={pos}
-                    className={`puz-tile ${tile?.id === 16 ? 'puz-tile-empty' : ''} ${won ? 'puz-tile-won' : ''}`}
-                    style={{ background: tile && tile.id <= 15 && tile.pos === tile.id - 1 ? '#f2b179' : '#8f7a66' }}
+                    className={`puz-tile ${tile?.id === gridSize * gridSize ? 'puz-tile-empty' : ''} ${won ? 'puz-tile-won' : ''}`}
+                    style={{ 
+                      background: tile && tile.id <= maxVal && tile.pos === tile.id - 1 ? '#f2b179' : '#8f7a66',
+                      fontSize: gridSize > 4 ? '16px' : '22px'
+                    }}
                     onClick={() => canMove && tile && move(pos)}
                   >
-                    {tile ? (tile.id === 16 ? '' : tile.id) : ''}
+                    {tile ? (tile.id === gridSize * gridSize ? '' : tile.id) : ''}
                   </div>
                 );
               })}
             </div>
             <div className="puz-actions">
-              <button className="puz-btn2" onClick={init}>🔄 Shuffle</button>
+              <button className="puz-btn2" onClick={() => init()}>🔄 Shuffle</button>
             </div>
           </div>
         </>
