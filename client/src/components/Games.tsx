@@ -21,10 +21,12 @@ function SlidingPuzzle() {
     if (showPuzzle && tiles.length === 0) init();
   }, [showPuzzle, tiles.length, init]);
 
-  const move = (index: number) => {
+  const move = (pos: number) => {
     if (won) return;
     const empty = tiles.find(t => t.id === 16)!;
-    const clicked = tiles[index];
+    const clicked = tiles.find(t => t.pos === pos)!;
+    if (!clicked) return;
+    
     const emptyRow = Math.floor(empty.pos / 4);
     const emptyCol = empty.pos % 4;
     const clickedRow = Math.floor(clicked.pos / 4);
@@ -33,16 +35,18 @@ function SlidingPuzzle() {
                        (emptyCol === clickedCol && Math.abs(emptyRow - clickedRow) === 1);
     if (!isAdjacent) return;
 
-    setTiles(prev => prev.map(t => 
-      t.id === clicked.id ? { ...t, pos: empty.pos } :
-      t.id === empty.id ? { ...t, pos: clicked.pos } : t
-    ));
+    setTiles(prev => {
+      const newTiles = prev.map(t => 
+        t.id === clicked.id ? { ...t, pos: empty.pos } :
+        t.id === empty.id ? { ...t, pos: clicked.pos } : t
+      );
+      setTimeout(() => {
+        const solved = newTiles.every(t => t.pos === t.id - 1);
+        if (solved) setWon(true);
+      }, 100);
+      return newTiles;
+    });
     setMoves(m => m + 1);
-
-    setTimeout(() => {
-      const solved = tiles.every(t => t.pos === t.id - 1);
-      if (solved) setWon(true);
-    }, 100);
   };
 
   return (
@@ -93,22 +97,23 @@ function SlidingPuzzle() {
             <div className="puz-header" style={{ fontSize: 24, fontWeight: 'bold' }}>🧩 Sliding Puzzle</div>
             <div className="puz-stats">Moves: {moves} {won && '🎉 SOLVED!'}</div>
             <div className="puz-grid">
-              {tiles.map((tile, idx) => {
+              {Array.from({ length: 16 }, (_, pos) => {
+                const tile = tiles.find(t => t.pos === pos);
                 const empty = tiles.find(t => t.id === 16)!;
                 const emptyRow = Math.floor(empty.pos / 4);
                 const emptyCol = empty.pos % 4;
-                const tileRow = Math.floor(tile.pos / 4);
-                const tileCol = tile.pos % 4;
+                const tileRow = Math.floor(pos / 4);
+                const tileCol = pos % 4;
                 const canMove = (emptyRow === tileRow && Math.abs(emptyCol - tileCol) === 1) ||
                                  (emptyCol === tileCol && Math.abs(emptyRow - tileRow) === 1);
                 return (
                   <div
-                    key={tile.id}
-                    className={`puz-tile ${tile.id === 16 ? 'puz-tile-empty' : ''} ${won ? 'puz-tile-won' : ''}`}
-                    style={{ background: tile.id <= 15 && tile.pos === tile.id - 1 ? '#f2b179' : '#8f7a66' }}
-                    onClick={() => canMove && move(idx)}
+                    key={pos}
+                    className={`puz-tile ${tile?.id === 16 ? 'puz-tile-empty' : ''} ${won ? 'puz-tile-won' : ''}`}
+                    style={{ background: tile && tile.id <= 15 && tile.pos === tile.id - 1 ? '#f2b179' : '#8f7a66' }}
+                    onClick={() => canMove && tile && move(pos)}
                   >
-                    {tile.id === 16 ? '' : tile.id}
+                    {tile ? (tile.id === 16 ? '' : tile.id) : ''}
                   </div>
                 );
               })}

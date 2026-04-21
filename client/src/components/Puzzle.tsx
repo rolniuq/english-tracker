@@ -55,8 +55,11 @@ function PuzzleGame() {
     if (!canMove(pos) || isSolved) return;
     
     setPieces(prev => {
-      const newPieces = [...prev];
-      [newPieces[pos], newPieces[emptyPos]] = [newPieces[emptyPos], newPieces[pos]];
+      const newPieces = prev.map(p => {
+        if (p.currentPos === pos) return { ...p, currentPos: emptyPos };
+        if (p.currentPos === emptyPos) return { ...p, currentPos: pos };
+        return p;
+      });
       
       const solved = newPieces.every(p => p.currentPos === p.correctPos);
       if (solved) {
@@ -224,18 +227,21 @@ function PuzzleGame() {
               Moves: {moveCount} {isSolved && '🎉 SOLVED!'}
             </div>
             <div className="puzzle-grid">
-              {pieces.map((piece, index) => (
-                <div
-                  key={index}
-                  className={`puzzle-piece ${piece.value === 0 ? 'empty' : ''} ${
-                    piece.currentPos === piece.correctPos ? 'correct' : ''
-                  } ${isSolved ? 'puzzle-solved' : ''}`}
-                  style={{ opacity: piece.value === 0 ? 0 : 1 }}
-                  onClick={() => canMove(index) && movePiece(index)}
-                >
-                  {piece.value || ''}
-                </div>
-              ))}
+              {Array.from({ length: 16 }, (_, pos) => {
+                const piece = pieces.find(p => p.currentPos === pos);
+                return (
+                  <div
+                    key={pos}
+                    className={`puzzle-piece ${!piece || piece.value === 0 ? 'empty' : ''} ${
+                      piece && piece.currentPos === piece.correctPos ? 'correct' : ''
+                    } ${isSolved ? 'puzzle-solved' : ''}`}
+                    style={{ opacity: !piece || piece.value === 0 ? 0 : 1 }}
+                    onClick={() => piece && canMove(pos) && movePiece(pos)}
+                  >
+                    {piece ? (piece.value || '') : ''}
+                  </div>
+                );
+              })}
             </div>
             <div className="puzzle-controls">
               <button className="puzzle-control-btn" style={{ background: '#667eea', color: 'white' }} onClick={shuffle}>
