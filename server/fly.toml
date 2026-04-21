@@ -1,0 +1,13 @@
+app = "english-tracker-api"
+primary_region = "gru"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

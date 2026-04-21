@@ -1,24 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Session, Attachment } from '../types';
+import { Session } from '../types';
 
-interface SessionData extends Session {
-  attachments: Attachment[];
-}
-
-const STORAGE_KEY = 'english_tracker_sessions';
-
-function loadFromStorage(): SessionData[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveToStorage(sessions: SessionData[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-}
+const API_BASE = 'https://english-tracker-api.fly.dev/api';
 
 export function useSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -28,7 +11,9 @@ export function useSessions() {
   const fetchSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const data = loadFromStorage();
+      const res = await fetch(`${API_BASE}/sessions`);
+      if (!res.ok) throw new Error('Failed to fetch sessions');
+      const data = await res.json();
       setSessions(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -41,87 +26,35 @@ export function useSessions() {
     fetchSessions();
   }, [fetchSessions]);
 
-  const getSession = useCallback(async (date: string): Promise<SessionData | null> => {
-    const all = loadFromStorage();
-    return all.find(s => s.date === date) || null;
+  const getSession = useCallback(async (date: string): Promise<Session | null> => {
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${date}`);
+      if (!res.ok) {
+        if (res.status === 404) return null;
+        throw new Error('Failed to fetch session');
+      }
+      return await res.json();
+    } catch {
+      return null;
+    }
   }, []);
 
   const saveSession = useCallback(async (date: string, attended: number, isOff: number, notes: string) => {
-    const all = loadFromStorage();
-    const existingIndex = all.findIndex(s => s.date === date);
-    
-    const now = new Date().toISOString();
-    if (existingIndex >= 0) {
-      all[existingIndex] = { ...all[existingIndex], attended, is_off: isOff, notes, updated_at: now };
-    } else {
-      all.push({
-        id: Date.now(),
-        date,
-        attended,
-        is_off: isOff,
-        notes,
-        created_at: now,
-        updated_at: now,
-        attachments: []
-      });
-    }
-    
-    saveToStorage(all);
-    setSessions(all);
-    return all[existingIndex >= 0 ? existingIndex : all.length - 1];
-  }, []);
+    const res = await fetch(`${API_BASE}/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, attended, is_off: isOff, notes })
+    });
+    if (!res.ok) throw new Error('Failed to save session');
+    await fetchSessions();
+    return res.json();
+  }, [fetchSessions]);
 
   const deleteSession = useCallback(async (date: string) => {
-    const all = loadFromStorage().filter(s => s.date !== date);
-    saveToStorage(all);
-    setSessions(all);
-  }, []);
-
-  const uploadAttachment = useCallback(async (date: string, file: File) => {
-    const all = loadFromStorage();
-    const existingIndex = all.findIndex(s => s.date === date);
-    
-    const attachment: Attachment = {
-      id: Date.now(),
-      session_id: existingIndex >= 0 ? all[existingIndex].id : 0,
-      filename: file.name,
-      filepath: '', // In localStorage mode, we'd need to store file data
-      mimetype: file.type,
-      size: file.size,
-      uploaded_at: new Date().toISOString()
-    };
-
-    if (existingIndex >= 0) {
-      if (!all[existingIndex].attachments) all[existingIndex].attachments = [];
-      all[existingIndex].attachments.push(attachment);
-    } else {
-      all.push({
-        id: Date.now(),
-        date,
-        attended: 0,
-        is_off: 0,
-        notes: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        attachments: [attachment]
-      });
-    }
-    
-    saveToStorage(all);
-    setSessions(all);
-    return attachment;
-  }, []);
-
-  const deleteAttachment = useCallback(async (id: number) => {
-    const all = loadFromStorage();
-    for (const session of all) {
-      if (session.attachments) {
-        session.attachments = session.attachments.filter(a => a.id !== id);
-      }
-    }
-    saveToStorage(all);
-    setSessions(all);
-  }, []);
+    const res = await fetch(`${API_BASE}/sessions/${date}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete session');
+    await fetchSessions();
+  }, [fetchSessions]);
 
   return {
     sessions,
@@ -130,8 +63,8 @@ export function useSessions() {
     getSession,
     saveSession,
     deleteSession,
-    uploadAttachment,
-    deleteAttachment,
+    uploadAttachment: async () => {},
+    deleteAttachment: async () => {},
     refreshSessions: fetchSessions
   };
 }
