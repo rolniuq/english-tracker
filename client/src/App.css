@@ -4,40 +4,6 @@
   padding: 0;
 }
 
-.pet-container {
-  position: fixed;
-  bottom: 15px;
-  left: 0;
-  z-index: 9999;
-  cursor: pointer;
-  animation: walkAcross 12s linear infinite;
-}
-
-@keyframes walkAcross {
-  0% { left: -70px; transform: scaleX(1); }
-  49% { transform: scaleX(1); }
-  50% { left: calc(100vw - 30px); }
-  51% { transform: scaleX(-1); }
-  99% { transform: scaleX(-1); }
-  100% { left: -70px; transform: scaleX(1); }
-}
-
-.pet {
-  font-size: 52px;
-  display: block;
-  animation: hop 0.3s ease-in-out infinite alternate;
-  filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.25));
-}
-
-@keyframes hop {
-  from { transform: translateY(0); }
-  to { transform: translateY(-12px); }
-}
-
-.pet:hover {
-  animation-play-state: paused;
-}
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   background-color: #f5f5f5;

@@ -2,27 +2,12 @@ import { useState, useCallback } from 'react';
 import { useSessions } from './hooks/useSessions';
 import { Calendar } from './components/Calendar';
 import { SessionModal } from './components/SessionModal';
+import { Pets } from './components/Pets';
 import { Session, Attachment } from './types';
 import './App.css';
 
 interface SessionWithAttachments extends Session {
   attachments: Attachment[];
-}
-
-function Pet() {
-  const [petType, setPetType] = useState(0);
-  const pets = ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸'];
-  
-  const cyclePet = () => {
-    setPetType((prev) => (prev + 1) % pets.length);
-  };
-
-  return (
-    <div className="pet-container" onClick={cyclePet} title="Click to change pet!">
-      <span className="pet">{pets[petType]}</span>
-      <div className="pet-shadow"></div>
-    </div>
-  );
 }
 
 function App() {
@@ -63,6 +48,9 @@ function App() {
     }
   }, [deleteAttachment, getSession, selectedDate]);
 
+  // Dummy handler - pets cycle internally
+  const handlePetChange = () => {};
+
   return (
     <div className="app">
       <header>
@@ -84,7 +72,7 @@ function App() {
         />
       )}
 
-      <Pet />
+      <Pets onChangePet={handlePetChange} />
     </div>
   );
 }
