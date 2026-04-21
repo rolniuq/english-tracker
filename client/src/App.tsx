@@ -2,8 +2,12 @@ import { useState, useCallback } from 'react';
 import { useSessions } from './hooks/useSessions';
 import { Calendar } from './components/Calendar';
 import { SessionModal } from './components/SessionModal';
-import { SessionWithAttachments } from './types';
+import { Session, Attachment } from './types';
 import './App.css';
+
+interface SessionWithAttachments extends Session {
+  attachments: Attachment[];
+}
 
 function App() {
   const { sessions, getSession, saveSession, uploadAttachment, deleteAttachment, refreshSessions } = useSessions();

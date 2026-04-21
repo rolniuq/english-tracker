@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { SessionWithAttachments, Attachment } from '../types';
+import { Session, Attachment } from '../types';
 
 interface SessionModalProps {
   date: string;
-  session: SessionWithAttachments | null;
+  session: (Session & { attachments?: Attachment[] }) | null;
   onClose: () => void;
   onSave: (attended: number, isOff: number, notes: string) => void;
   onUpload: (file: File) => void;
@@ -101,18 +101,11 @@ export function SessionModal({
           </div>
 
           <div className="attachments-section">
-            <label>Attachments:</label>
+            <label>Attachments: (file list only)</label>
             <div className="attachments-list">
               {attachments.map(file => (
                 <div key={file.id} className="attachment-item">
-                  <a
-                    href={`/api/attachments/${file.id}/download`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="attachment-link"
-                  >
-                    {file.filename} ({formatFileSize(file.size)})
-                  </a>
+                  <span className="attachment-link">{file.filename} ({formatFileSize(file.size)})</span>
                   <button
                     className="delete-file-btn"
                     onClick={() => handleDeleteFile(file.id)}
@@ -121,6 +114,7 @@ export function SessionModal({
                   </button>
                 </div>
               ))}
+              {attachments.length === 0 && <p className="no-attachments">No attachments</p>}
             </div>
             <input
               ref={fileInputRef}
@@ -128,7 +122,7 @@ export function SessionModal({
               onChange={handleFileUpload}
               disabled={uploading}
             />
-            {uploading && <span>Uploading...</span>}
+            {uploading && <span>Adding...</span>}
           </div>
         </div>
 

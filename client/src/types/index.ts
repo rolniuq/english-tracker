@@ -13,12 +13,8 @@ export interface Attachment {
   id: number;
   session_id: number;
   filename: string;
-  filepath: string;
+  filepath?: string;
   mimetype: string;
   size: number;
   uploaded_at: string;
-}
-
-export interface SessionWithAttachments extends Session {
-  attachments: Attachment[];
 }
