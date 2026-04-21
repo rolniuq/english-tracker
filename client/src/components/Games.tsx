@@ -233,33 +233,66 @@ function SlidingPuzzle() {
   const [won, setWon] = useState(false);
   const [gridSize, setGridSize] = useState(4);
   const [level, setLevel] = useState(1);
+  const [gameMode, setGameMode] = useState<'classic' | 'challenge' | 'speed'>('classic');
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [hint, setHint] = useState(false);
+  const [bestScore, setBestScore] = useState({ moves: Infinity, time: Infinity });
 
   const init = useCallback((size?: number) => {
     const actualSize = size || gridSize;
     const totalTiles = actualSize * actualSize;
     const t = Array.from({ length: totalTiles }, (_, i) => ({ id: i + 1, pos: i }));
-    for (let i = t.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [t[i], t[j]] = [t[j], t[i]];
-    }
+    do {
+      for (let i = t.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [t[i], t[j]] = [t[j], t[i]];
+      }
+    } while (t.every(tile => tile.pos === tile.id - 1));
     setTiles(t);
     setMoves(0);
     setWon(false);
-  }, [gridSize]);
+    setTimeLeft(gameMode === 'speed' ? Math.max(30, 60 - level * 5) : gameMode === 'challenge' ? 45 : 999);
+    setHint(false);
+  }, [gridSize, level, gameMode]);
 
   useEffect(() => {
     if (showPuzzle && tiles.length === 0) init();
   }, [showPuzzle, tiles.length, init]);
 
+  useEffect(() => {
+    let interval: number;
+    if (showPuzzle && gameMode === 'speed' && timeLeft > 0 && !won) {
+      interval = window.setInterval(() => {
+        setTimeLeft(t => {
+          if (t <= 1) {
+            setWon(true);
+            return 0;
+          }
+          return t - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showPuzzle, gameMode, timeLeft, won]);
+
   const nextLevel = () => {
+    setBestScore(prev => ({
+      moves: Math.min(prev.moves, moves),
+      time: Math.min(prev.time, timeLeft)
+    }));
     if (gridSize < 6) {
       setGridSize(s => s + 1);
-      setTimeout(() => init(gridSize + 1), 500);
+      setTimeout(() => init(gridSize + 1), 1000);
     } else {
       setGridSize(4);
       setLevel(l => l + 1);
-      setTimeout(() => init(4), 500);
+      setTimeout(() => init(4), 1000);
     }
+  };
+
+  const showHint = () => {
+    setHint(true);
+    setTimeout(() => setHint(false), 1500);
   };
 
   const move = (pos: number) => {
@@ -284,6 +317,9 @@ function SlidingPuzzle() {
       const solved = newTiles.every(t => t.pos === t.id - 1);
       if (solved) {
         setWon(true);
+        if (bestScore.moves > moves || bestScore.time > timeLeft) {
+          setBestScore({ moves: Math.min(bestScore.moves, moves + 1), time: Math.min(bestScore.time, timeLeft) });
+        }
         setTimeout(nextLevel, 1500);
       }
       return newTiles;
@@ -300,43 +336,70 @@ function SlidingPuzzle() {
           color: white; border: none; border-radius: 8px;
           font-size: 14px; font-weight: bold; cursor: pointer; z-index: 9999;
         }
-        .puz-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; }
+        .puz-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; }
         .puz-box {
           position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-          background: #bbada0; padding: 15px; border-radius: 10px; z-index: 10001;
+          background: #bbada0; padding: 20px; border-radius: 12px; z-index: 10001; min-width: 350px;
         }
-        .puz-grid { display: grid; gap: 6px; }
+        .puz-grid { display: grid; gap: 5px; }
         .puz-tile {
           display: flex; align-items: center; justify-content: center;
           border-radius: 4px; font-weight: bold;
-          cursor: pointer; transition: all 0.15s;
+          cursor: pointer; transition: transform 0.1s;
         }
+        .puz-tile:hover { transform: scale(1.05); }
         .puz-tile-empty { background: #cdc1b4; cursor: default; }
         .puz-tile-won { background: #edc22e !important; animation: pulse 0.3s infinite; }
+        .puz-tile-hint { animation: flashHint 0.5s 3; }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes flashHint { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); box-shadow: 0 0 15px #ffd700; } }
         .puz-header { color: white; text-align: center; margin-bottom: 10px; }
-        .puz-stats { color: #eee; text-align: center; margin: 10px 0; }
-        .puz-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .puz-btn2 { padding: 10px 20px; background: #8f7a66; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .puz-stats { color: #eee; text-align: center; margin: 8px 0; font-size: 14px; }
+        .puz-timer { color: #ef4444; font-weight: bold; }
+        .puz-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+        .puz-btn2 { padding: 8px 14px; background: #8f7a66; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .puz-btn2:hover { transform: scale(1.05); }
+        .puz-mode { display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .puz-mode-btn { padding: 6px 12px; background: #665c52; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .puz-mode-btn.active { background: #f2b179; color: #333; }
         .puz-close { position: absolute; top: -40px; right: 0; background: #ff6b6b; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; }
       `}</style>
-      <button className="puz-btn" onClick={() => setShowPuzzle(true)}>🧩 Puzzle {gridSize}x{gridSize}</button>
+      <button className="puz-btn" onClick={() => setShowPuzzle(true)}>🧩 Puzzle {gridSize}²</button>
       
       {showPuzzle && (
         <>
           <div className="puz-overlay" onClick={() => setShowPuzzle(false)} />
           <div className="puz-box">
             <button className="puz-close" onClick={() => setShowPuzzle(false)}>✕</button>
-            <div className="puz-header" style={{ fontSize: 24, fontWeight: 'bold' }}>
-              🧩 Puzzle {gridSize}x{gridSize} {level > 1 && `(Level ${level})`}
+            <div className="puz-header" style={{ fontSize: 22, fontWeight: 'bold' }}>
+              🧩 Puzzle {gridSize}×{gridSize}
+              {level > 1 && <span style={{ fontSize: 14 }}> 🔥Lv.{level}</span>}
             </div>
-            <div className="puz-stats">Moves: {moves} {won && '🎉 Next Level!'}</div>
+            <div className="puz-mode">
+              {(['classic', 'challenge', 'speed'] as const).map(m => (
+                <button
+                  key={m}
+                  className={`puz-mode-btn ${gameMode === m ? 'active' : ''}`}
+                  onClick={() => { setGameMode(m); setTimeout(() => init(), 100); }}
+                >
+                  {m === 'classic' ? '🎯 Classic' : m === 'challenge' ? '⚡ Challenge' : '⏱️ Speed'}
+                </button>
+              ))}
+            </div>
+            <div className="puz-stats">
+              {gameMode === 'speed' && (
+                <span className="puz-timer">⏱️ {timeLeft}s </span>
+              )}
+              Moves: <strong>{moves}</strong>
+              {bestScore.moves < Infinity && <span style={{ marginLeft: 10 }}>Best: {bestScore.moves}</span>}
+              {hint && <span style={{ color: '#ffd700', marginLeft: 10 }}>💡 Hint!</span>}
+            </div>
             <div 
               className="puz-grid"
               style={{ 
                 gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-                width: `${gridSize * 60}px`,
-                height: `${gridSize * 60}px`
+                width: `${gridSize * 55}px`,
+                height: `${gridSize * 55}px`
               }}
             >
               {Array.from({ length: gridSize * gridSize }, (_, pos) => {
@@ -351,13 +414,15 @@ function SlidingPuzzle() {
                 const canMove = (emptyRow === tileRow && Math.abs(emptyCol - tileCol) === 1) ||
                                  (emptyCol === tileCol && Math.abs(emptyRow - tileRow) === 1);
                 const maxVal = gridSize * gridSize - 1;
+                const isHint = hint && tile && tile.id !== gridSize * gridSize && tile.pos !== tile.id - 1;
                 return (
                   <div
                     key={pos}
-                    className={`puz-tile ${tile?.id === gridSize * gridSize ? 'puz-tile-empty' : ''} ${won ? 'puz-tile-won' : ''}`}
+                    className={`puz-tile ${tile?.id === gridSize * gridSize ? 'puz-tile-empty' : ''} ${won ? 'puz-tile-won' : ''} ${isHint ? 'puz-tile-hint' : ''}`}
                     style={{ 
                       background: tile && tile.id <= maxVal && tile.pos === tile.id - 1 ? '#f2b179' : '#8f7a66',
-                      fontSize: gridSize > 4 ? '16px' : '22px'
+                      fontSize: gridSize > 4 ? '14px' : '20px',
+                      color: tile && tile.id <= maxVal && tile.pos === tile.id - 1 ? '#333' : '#fff'
                     }}
                     onClick={() => canMove && tile && move(pos)}
                   >
@@ -367,7 +432,15 @@ function SlidingPuzzle() {
               })}
             </div>
             <div className="puz-actions">
-              <button className="puz-btn2" onClick={() => init()}>🔄 Shuffle</button>
+              <button className="puz-btn2" onClick={() => init()}>🔄 Reset</button>
+              <button className="puz-btn2" onClick={showHint}>💡 Hint</button>
+              {gameMode !== 'classic' && (
+                <button className="puz-btn2" onClick={() => { setGameMode('classic'); init(); }}>🎯 Easy</button>
+              )}
+            </div>
+            {won && <div className="puz-stats" style={{ color: '#4ade80', fontWeight: 'bold' }}>🎉 Level {level} Complete!</div>}
+            <div style={{ color: '#aaa', fontSize: 11, textAlign: 'center', marginTop: 8 }}>
+              {gridSize === 4 ? 'Easy' : gridSize === 5 ? 'Medium' : 'Hard'} • {gameMode === 'challenge' ? '45s' : gameMode === 'speed' ? `${30 - level * 5}s` : '∞'}
             </div>
           </div>
         </>
