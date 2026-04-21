@@ -11,3 +11,10 @@ primary_region = "gru"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"
+
+[[volume]]
+  source = "data"
+  destination = "/app/data"
+
+[env]
+  VOLUME_DATA = "/app/data"

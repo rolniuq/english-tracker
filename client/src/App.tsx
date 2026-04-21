@@ -9,6 +9,21 @@ interface SessionWithAttachments extends Session {
   attachments: Attachment[];
 }
 
+function Pet() {
+  const [petType, setPetType] = useState(0);
+  const pets = ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯'];
+  
+  const cyclePet = () => {
+    setPetType((prev) => (prev + 1) % pets.length);
+  };
+
+  return (
+    <div className="pet" onClick={cyclePet} title="Click to change pet!">
+      {pets[petType]}
+    </div>
+  );
+}
+
 function App() {
   const { sessions, getSession, saveSession, uploadAttachment, deleteAttachment, refreshSessions } = useSessions();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -67,6 +82,8 @@ function App() {
           onDeleteAttachment={handleDeleteAttachment}
         />
       )}
+
+      <Pet />
     </div>
   );
 }
