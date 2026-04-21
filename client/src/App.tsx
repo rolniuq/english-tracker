@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react';
 import { useSessions } from './hooks/useSessions';
 import { Calendar } from './components/Calendar';
 import { SessionModal } from './components/SessionModal';
-import { Pets } from './components/Pets';
 import PetRace from './components/PetRace';
+import Puzzle from './components/Puzzle';
 import Games from './components/Games';
 import { Session, Attachment } from './types';
 import './App.css';
@@ -71,8 +71,8 @@ function App() {
         />
       )}
 
-      <Pets />
       <PetRace />
+      <Puzzle />
       <Games />
     </div>
   );
