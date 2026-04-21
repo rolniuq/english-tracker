@@ -3,6 +3,7 @@ import { useSessions } from './hooks/useSessions';
 import { Calendar } from './components/Calendar';
 import { SessionModal } from './components/SessionModal';
 import { Pets } from './components/Pets';
+import Puzzle from './components/Puzzle';
 import { Session, Attachment } from './types';
 import './App.css';
 
@@ -70,6 +71,7 @@ function App() {
       )}
 
       <Pets />
+      <Puzzle />
     </div>
   );
 }
