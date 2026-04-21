@@ -11,15 +11,16 @@ interface SessionWithAttachments extends Session {
 
 function Pet() {
   const [petType, setPetType] = useState(0);
-  const pets = ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯'];
+  const pets = ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐸'];
   
   const cyclePet = () => {
     setPetType((prev) => (prev + 1) % pets.length);
   };
 
   return (
-    <div className="pet" onClick={cyclePet} title="Click to change pet!">
-      {pets[petType]}
+    <div className="pet-container" onClick={cyclePet} title="Click to change pet!">
+      <span className="pet">{pets[petType]}</span>
+      <div className="pet-shadow"></div>
     </div>
   );
 }
