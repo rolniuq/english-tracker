@@ -48,9 +48,6 @@ function App() {
     }
   }, [deleteAttachment, getSession, selectedDate]);
 
-  // Dummy handler - pets cycle internally
-  const handlePetChange = () => {};
-
   return (
     <div className="app">
       <header>
@@ -72,7 +69,7 @@ function App() {
         />
       )}
 
-      <Pets onChangePet={handlePetChange} />
+      <Pets />
     </div>
   );
 }
