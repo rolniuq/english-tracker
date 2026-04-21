@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Session, Attachment } from '../types';
 
 const API_BASE = 'https://english-tracker-api.fly.dev/api';
@@ -11,6 +11,7 @@ export function useSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -28,6 +29,31 @@ export function useSessions() {
 
   useEffect(() => {
     fetchSessions();
+  }, [fetchSessions]);
+
+  useEffect(() => {
+    const eventSource = new EventSource(`${API_BASE}/events`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.addEventListener('session-updated', () => {
+      fetchSessions();
+    });
+
+    eventSource.addEventListener('session-deleted', () => {
+      fetchSessions();
+    });
+
+    eventSource.addEventListener('attachment-added', () => {
+      fetchSessions();
+    });
+
+    eventSource.addEventListener('attachment-deleted', () => {
+      fetchSessions();
+    });
+
+    return () => {
+      eventSource.close();
+    };
   }, [fetchSessions]);
 
   const getSession = useCallback(async (date: string): Promise<SessionWithAttachments | null> => {

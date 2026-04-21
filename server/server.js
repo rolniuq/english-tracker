@@ -31,6 +31,28 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
+const clients = new Set();
+
+function broadcast(event, data) {
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of clients) {
+    res.write(message);
+  }
+}
+
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  clients.add(res);
+
+  req.on('close', () => {
+    clients.delete(res);
+  });
+});
+
 app.get('/api/sessions', (req, res) => {
   try {
     const sessions = db.getAllSessions();
@@ -60,6 +82,7 @@ app.post('/api/sessions', (req, res) => {
       return res.status(400).json({ error: 'Date is required' });
     }
     const session = db.createOrUpdateSession(date, attended || 0, is_off || 0, notes || '');
+    broadcast('session-updated', session);
     res.status(201).json(session);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -69,6 +92,7 @@ app.post('/api/sessions', (req, res) => {
 app.delete('/api/sessions/:date', (req, res) => {
   try {
     db.deleteSession(req.params.date);
+    broadcast('session-deleted', { date: req.params.date });
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -96,6 +120,7 @@ app.post('/api/attachments/upload', upload.single('file'), (req, res) => {
       req.file.mimetype,
       req.file.size
     );
+    broadcast('attachment-added', { date, attachment });
     res.status(201).json(attachment);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -127,6 +152,7 @@ app.delete('/api/attachments/:id', (req, res) => {
         fs.unlinkSync(filePath);
       }
       db.deleteAttachment(req.params.id);
+      broadcast('attachment-deleted', { id: parseInt(req.params.id) });
     }
     res.status(204).send();
   } catch (error) {
