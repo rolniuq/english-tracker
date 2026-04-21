@@ -1,6 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://english-tracker-api.onrender.com/api/$1" },
-    { "source": "/uploads/(.*)", "destination": "https://english-tracker-api.onrender.com/uploads/$1" }
-  ]
-}

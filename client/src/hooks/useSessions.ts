@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Session, SessionWithAttachments } from '../types';
 
-const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
+// CHANGE THIS to your deployed backend URL after Render deployment
+const API_BASE = 'https://YOUR-RENDER-URL.onrender.com';
 
 export function useSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
