@@ -248,10 +248,10 @@ function SlidingPuzzle() {
   }, [showPuzzle, tiles.length, init]);
 
   const move = (pos: number) => {
-    if (won) return;
-    const empty = tiles.find(t => t.id === 16)!;
-    const clicked = tiles.find(t => t.pos === pos)!;
-    if (!clicked) return;
+    if (won || tiles.length === 0) return;
+    const empty = tiles.find(t => t.id === 16);
+    const clicked = tiles.find(t => t.pos === pos);
+    if (!empty || !clicked) return;
     
     const emptyRow = Math.floor(empty.pos / 4);
     const emptyCol = empty.pos % 4;
@@ -266,10 +266,8 @@ function SlidingPuzzle() {
         t.id === clicked.id ? { ...t, pos: empty.pos } :
         t.id === empty.id ? { ...t, pos: clicked.pos } : t
       );
-      setTimeout(() => {
-        const solved = newTiles.every(t => t.pos === t.id - 1);
-        if (solved) setWon(true);
-      }, 100);
+      const solved = newTiles.every(t => t.pos === t.id - 1);
+      if (solved) setWon(true);
       return newTiles;
     });
     setMoves(m => m + 1);
@@ -315,8 +313,10 @@ function SlidingPuzzle() {
             <div className="puz-stats">Moves: {moves} {won && '🎉 SOLVED!'}</div>
             <div className="puz-grid">
               {Array.from({ length: 16 }, (_, pos) => {
+                if (tiles.length === 0) return <div key={pos} className="puz-tile"></div>;
                 const tile = tiles.find(t => t.pos === pos);
-                const empty = tiles.find(t => t.id === 16)!;
+                const empty = tiles.find(t => t.id === 16);
+                if (!empty) return <div key={pos} className="puz-tile"></div>;
                 const emptyRow = Math.floor(empty.pos / 4);
                 const emptyCol = empty.pos % 4;
                 const tileRow = Math.floor(pos / 4);
