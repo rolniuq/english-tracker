@@ -1,0 +1,28 @@
+name: Deploy Backend to Render
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - server/**
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Render CLI
+        run: |
+          curl -L https://github.com/render-oss/cli/releases/download/v2.15.1/cli_2.15.1_linux_amd64.zip -o render.zip
+          unzip render.zip
+          mv cli_v2.15.1_linux_amd64 render
+          chmod +x render
+          echo "${{ runner.temp }}/render" >> $GITHUB_PATH
+      
+      - name: Deploy to Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          render deploys create srv-d6fusgg8tnhs73d56850 --wait --output text
