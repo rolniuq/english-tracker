@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Session } from "@/lib/types";
+import { Session } from "./TrackerApp";
 import { DayCell } from "./DayCell";
 
 interface CalendarProps {
@@ -12,18 +12,8 @@ interface CalendarProps {
 }
 
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 function getDaysInMonth(year: number, month: number): number {
@@ -91,42 +81,20 @@ export function Calendar({
     return daysArray;
   }, [year, month]);
 
-  const goToPrevMonth = () => {
-    onDateChange(new Date(year, month - 1, 1));
-  };
-
-  const goToNextMonth = () => {
-    onDateChange(new Date(year, month + 1, 1));
-  };
-
-  const goToToday = () => {
-    onDateChange(new Date());
-  };
+  const goToPrevMonth = () => onDateChange(new Date(year, month - 1, 1));
+  const goToNextMonth = () => onDateChange(new Date(year, month + 1, 1));
+  const goToToday = () => onDateChange(new Date());
 
   return (
     <div className="calendar">
       <div className="calendar-header">
-        <button onClick={goToPrevMonth} className="calendar-nav-btn">
-          &lt; Prev
-        </button>
-        <h2>
-          {MONTHS[month]} {year}
-        </h2>
-        <button onClick={goToNextMonth} className="calendar-nav-btn">
-          Next &gt;
-        </button>
+        <button onClick={goToPrevMonth} className="calendar-nav-btn">&lt; Prev</button>
+        <h2>{MONTHS[month]} {year}</h2>
+        <button onClick={goToNextMonth} className="calendar-nav-btn">Next &gt;</button>
       </div>
-      <button className="today-btn" onClick={goToToday}>
-        Today
-      </button>
+      <button className="today-btn" onClick={goToToday}>Today</button>
       <div className="calendar-weekdays">
-        <div>Sun</div>
-        <div>Mon</div>
-        <div>Tue</div>
-        <div>Wed</div>
-        <div>Thu</div>
-        <div>Fri</div>
-        <div>Sat</div>
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
       </div>
       <div className="calendar-grid">
         {days.map(({ date, day, isCurrentMonth }) => (

@@ -1,54 +1,48 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Calendar } from "@/components/Calendar";
 import { SessionModal } from "@/components/SessionModal";
-import type { Session, SessionWithAttachments } from "@/lib/types";
+
+export interface Session {
+  date: string;
+  attended: number;
+  is_off: number;
+  notes: string;
+}
+
+const STORAGE_KEY = "english-tracker-sessions";
+
+function loadSessions(): Session[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : Object.values(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function saveSessions(sessions: Session[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+}
 
 export function TrackerApp() {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedSession, setSelectedSession] =
-    useState<SessionWithAttachments | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchTrigger, setFetchTrigger] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchSessions() {
-      try {
-        const res = await fetch("/api/sessions");
-        if (!res.ok) throw new Error("Failed to fetch sessions");
-        const data = await res.json();
-        if (!cancelled) setSessions(data);
-      } catch (error) {
-        console.error("Failed to fetch sessions:", error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetchSessions();
-    return () => { cancelled = true; };
-  }, [fetchTrigger]);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   const refreshSessions = useCallback(() => {
-    setFetchTrigger((t) => t + 1);
+    setSessions(loadSessions());
   }, []);
 
-  const handleDayClick = useCallback(async (date: string) => {
+  const handleDayClick = useCallback((date: string) => {
     setSelectedDate(date);
-    try {
-      const res = await fetch(`/api/sessions/${date}`);
-      if (res.ok) {
-        const session = await res.json();
-        setSelectedSession(session);
-      } else {
-        setSelectedSession(null);
-      }
-    } catch {
-      setSelectedSession(null);
-    }
+    const all = loadSessions();
+    setSelectedSession(all.find((s) => s.date === date) || null);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -57,40 +51,25 @@ export function TrackerApp() {
   }, []);
 
   const handleSave = useCallback(
-    async (attended: number, isOff: number, notes: string) => {
+    (attended: number, isOff: number, notes: string) => {
       if (!selectedDate) return;
 
-      try {
-        const res = await fetch("/api/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ date: selectedDate, attended, is_off: isOff, notes }),
-        });
+      const all = loadSessions();
+      const existing = all.findIndex((s) => s.date === selectedDate);
+      const updated: Session = { date: selectedDate, attended, is_off: isOff, notes };
 
-        if (!res.ok) throw new Error("Failed to save session");
-
-        handleClose();
-        refreshSessions();
-      } catch (error) {
-        console.error("Failed to save session:", error);
+      if (existing >= 0) {
+        all[existing] = updated;
+      } else {
+        all.push(updated);
       }
+      saveSessions(all);
+
+      handleClose();
+      refreshSessions();
     },
     [selectedDate, handleClose, refreshSessions]
   );
-
-  if (loading) {
-    return (
-      <div className="app">
-        <header>
-          <h1>English Learning Tracker</h1>
-          <p className="subtitle">Ms. Jessica&apos;s Class</p>
-        </header>
-        <main>
-          <p style={{ textAlign: "center", padding: "40px" }}>Loading...</p>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="app">
@@ -109,11 +88,11 @@ export function TrackerApp() {
 
       {selectedDate && (
         <SessionModal
+          key={selectedDate}
           date={selectedDate}
           session={selectedSession}
           onClose={handleClose}
           onSave={handleSave}
-          onRefresh={refreshSessions}
         />
       )}
     </div>

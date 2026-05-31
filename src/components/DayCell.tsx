@@ -1,6 +1,6 @@
 "use client";
 
-import { Session } from "@/lib/types";
+import { Session } from "./TrackerApp";
 
 interface DayCellProps {
   date: string;
