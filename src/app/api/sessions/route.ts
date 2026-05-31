@@ -3,7 +3,7 @@ import { getAllSessions, createOrUpdateSession } from "@/lib/storage";
 
 export async function GET() {
   try {
-    const sessions = getAllSessions();
+    const sessions = await getAllSessions();
     return NextResponse.json(sessions);
   } catch {
     return NextResponse.json(
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
-    const session = createOrUpdateSession(date, attended || 0, is_off || 0, notes || "");
+    const session = await createOrUpdateSession(date, attended || 0, is_off || 0, notes || "");
     return NextResponse.json(session, { status: 201 });
   } catch {
     return NextResponse.json(

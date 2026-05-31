@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { date } = await params;
-    const session = getSessionByDate(date);
+    const session = await getSessionByDate(date);
 
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
@@ -28,7 +28,7 @@ export async function DELETE(
 ) {
   try {
     const { date } = await params;
-    deleteSession(date);
+    await deleteSession(date);
     return new NextResponse(null, { status: 204 });
   } catch {
     return NextResponse.json(

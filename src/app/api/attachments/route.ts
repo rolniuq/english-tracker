@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
-import {
-  createAttachment,
-  deleteAttachment,
-} from "@/lib/storage";
-
-const UPLOADS_DIR = path.join(process.cwd(), "data", "attachments");
+import { createAttachment, deleteAttachment } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,22 +15,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
-    const dateDir = path.join(UPLOADS_DIR, date);
-    if (!fs.existsSync(dateDir)) {
-      fs.mkdirSync(dateDir, { recursive: true });
-    }
-
-    const ext = path.extname(file.name);
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
-    const filepath = path.join(dateDir, filename);
-
     const bytes = await file.arrayBuffer();
-    fs.writeFileSync(filepath, Buffer.from(bytes));
+    const base64 = Buffer.from(bytes).toString("base64");
 
-    const attachment = createAttachment(
+    const attachment = await createAttachment(
       date,
       file.name,
-      filename,
+      base64,
       file.type,
       file.size
     );
@@ -60,7 +44,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    const deleted = deleteAttachment(id);
+    const deleted = await deleteAttachment(id);
     if (!deleted) {
       return NextResponse.json({ error: "Attachment not found" }, { status: 404 });
     }

@@ -1,64 +1,37 @@
-import fs from "fs";
-import path from "path";
+import { Redis } from "@upstash/redis";
 import { v4 as uuidv4 } from "uuid";
 import type { Session, SessionWithAttachments, Attachment } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
-const ATTACHMENTS_DIR = path.join(DATA_DIR, "attachments");
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
 
-function ensureDirectories(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(ATTACHMENTS_DIR)) {
-    fs.mkdirSync(ATTACHMENTS_DIR, { recursive: true });
-  }
-}
+const SESSIONS_KEY = "sessions";
 
-function readSessionsFile(): Record<string, Session> {
-  ensureDirectories();
-  if (!fs.existsSync(SESSIONS_FILE)) {
-    fs.writeFileSync(SESSIONS_FILE, "{}", "utf-8");
-    return {};
-  }
-  const content = fs.readFileSync(SESSIONS_FILE, "utf-8");
-  try {
-    return JSON.parse(content);
-  } catch {
-    return {};
-  }
-}
-
-function writeSessionsFile(sessions: Record<string, Session>): void {
-  ensureDirectories();
-  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), "utf-8");
-}
-
-export function getAllSessions(): Session[] {
-  const sessions = readSessionsFile();
+export async function getAllSessions(): Promise<Session[]> {
+  const sessions = await redis.hgetall<Record<string, Session>>(SESSIONS_KEY);
+  if (!sessions) return [];
   return Object.values(sessions).sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export function getSessionByDate(date: string): SessionWithAttachments | null {
-  const sessions = readSessionsFile();
-  const session = sessions[date];
+export async function getSessionByDate(date: string): Promise<SessionWithAttachments | null> {
+  const session = await redis.hget<Session>(SESSIONS_KEY, date);
   if (!session) return null;
 
-  const attachments = getAttachmentsByDate(date);
+  const attachments = await getAttachmentsByDate(date);
   return { ...session, attachments };
 }
 
-export function createOrUpdateSession(
+export async function createOrUpdateSession(
   date: string,
   attended: number = 0,
   isOff: number = 0,
   notes: string = ""
-): Session {
-  const sessions = readSessionsFile();
+): Promise<Session> {
+  const existing = await redis.hget<Session>(SESSIONS_KEY, date);
   const now = new Date().toISOString();
 
-  const existing = sessions[date];
   const session: Session = {
     date,
     attended,
@@ -68,102 +41,68 @@ export function createOrUpdateSession(
     updated_at: now,
   };
 
-  sessions[date] = session;
-  writeSessionsFile(sessions);
+  await redis.hset(SESSIONS_KEY, { [date]: session });
   return session;
 }
 
-export function deleteSession(date: string): void {
-  const sessions = readSessionsFile();
-  delete sessions[date];
-  writeSessionsFile(sessions);
-
-  const attachmentsDir = path.join(ATTACHMENTS_DIR, date);
-  if (fs.existsSync(attachmentsDir)) {
-    fs.rmSync(attachmentsDir, { recursive: true, force: true });
-  }
+export async function deleteSession(date: string): Promise<void> {
+  await redis.hdel(SESSIONS_KEY, date);
+  await redis.del(`attachments:${date}`);
 }
 
-function getAttachmentsByDate(date: string): Attachment[] {
-  const dateDir = path.join(ATTACHMENTS_DIR, date);
-  if (!fs.existsSync(dateDir)) return [];
-
-  const indexFile = path.join(dateDir, "index.json");
-  if (!fs.existsSync(indexFile)) return [];
-
-  try {
-    const content = fs.readFileSync(indexFile, "utf-8");
-    return JSON.parse(content);
-  } catch {
-    return [];
-  }
+async function getAttachmentsByDate(date: string): Promise<Attachment[]> {
+  const attachments = await redis.hgetall<Record<string, Attachment>>(`attachments:${date}`);
+  if (!attachments) return [];
+  return Object.values(attachments);
 }
 
-function saveAttachmentsForDate(date: string, attachments: Attachment[]): void {
-  const dateDir = path.join(ATTACHMENTS_DIR, date);
-  ensureDirectories();
-  if (!fs.existsSync(dateDir)) {
-    fs.mkdirSync(dateDir, { recursive: true });
-  }
-  const indexFile = path.join(dateDir, "index.json");
-  fs.writeFileSync(indexFile, JSON.stringify(attachments, null, 2), "utf-8");
-}
-
-export function createAttachment(
+export async function createAttachment(
   date: string,
   filename: string,
-  filepath: string,
+  fileContent: string,
   mimetype: string,
   size: number
-): Attachment {
-  const attachments = getAttachmentsByDate(date);
+): Promise<Attachment> {
   const attachment: Attachment = {
     id: uuidv4(),
     session_date: date,
     filename,
-    filepath,
+    filepath: fileContent,
     mimetype,
     size,
     uploaded_at: new Date().toISOString(),
   };
 
-  attachments.push(attachment);
-  saveAttachmentsForDate(date, attachments);
+  await redis.hset(`attachments:${date}`, { [attachment.id]: attachment });
   return attachment;
 }
 
-export function getAttachmentById(id: string): Attachment | null {
-  const dates = fs.readdirSync(ATTACHMENTS_DIR);
-  for (const date of dates) {
-    const attachments = getAttachmentsByDate(date);
-    const found = attachments.find((a) => a.id === id);
-    if (found) return found;
+export async function getAttachmentById(id: string): Promise<Attachment | null> {
+  const keys = await redis.keys("attachments:*");
+  for (const key of keys) {
+    const attachments = await redis.hgetall<Record<string, Attachment>>(key);
+    if (attachments) {
+      const found = Object.values(attachments).find((a) => a.id === id);
+      if (found) return found;
+    }
   }
   return null;
 }
 
-export function deleteAttachment(id: string): boolean {
-  const dates = fs.readdirSync(ATTACHMENTS_DIR);
-  for (const date of dates) {
-    const attachments = getAttachmentsByDate(date);
-    const index = attachments.findIndex((a) => a.id === id);
-    if (index !== -1) {
-      const attachment = attachments[index];
-      const filePath = path.join(ATTACHMENTS_DIR, date, attachment.filepath);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-      attachments.splice(index, 1);
-      saveAttachmentsForDate(date, attachments);
+export async function deleteAttachment(id: string): Promise<boolean> {
+  const keys = await redis.keys("attachments:*");
+  for (const key of keys) {
+    const attachments = await redis.hgetall<Record<string, Attachment>>(key);
+    if (attachments && attachments[id]) {
+      await redis.hdel(key, id);
       return true;
     }
   }
   return false;
 }
 
-export function getAttachmentFilePath(id: string): string | null {
-  const attachment = getAttachmentById(id);
+export async function getAttachmentFileContent(id: string): Promise<string | null> {
+  const attachment = await getAttachmentById(id);
   if (!attachment) return null;
-  const filePath = path.join(ATTACHMENTS_DIR, attachment.session_date, attachment.filepath);
-  return fs.existsSync(filePath) ? filePath : null;
+  return attachment.filepath;
 }
