@@ -9,14 +9,12 @@
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS + Custom CSS
-- **Data Storage**: JSON file (`data/sessions.json`)
+- **Data Storage**: Upstash Redis (via `@vercel/kv`)
 
 ## Project Structure
 
 ```
 jessica/
-├── data/
-│   └── sessions.json            # All session records
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx           # Root layout
@@ -37,7 +35,7 @@ jessica/
 
 ## Data Format
 
-### data/sessions.json
+Stored in Upstash Redis under key `sessions`:
 ```json
 [
   {
@@ -62,6 +60,15 @@ jessica/
 | GET | `/api/sessions` | Get all sessions |
 | POST | `/api/sessions` | Save all sessions |
 
+## Environment Variables
+
+Required (from Upstash Redis integration):
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+- `KV_REST_API_READ_ONLY_TOKEN`
+
+These are auto-injected by Vercel when the Upstash Redis integration is installed.
+
 ## Commands
 
 ```bash
@@ -84,7 +91,6 @@ npm run lint     # Run ESLint
 
 ## Notes for Future Development
 
-- All data is stored locally in `data/sessions.json`
+- Data stored in Upstash Redis via `@vercel/kv`
+- Works both locally and on Vercel
 - No authentication required
-- No backend/database needed
-- Data persists on disk across sessions
