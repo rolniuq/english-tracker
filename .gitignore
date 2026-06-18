@@ -36,8 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
-# data (attachments, keep sessions.json)
+# data
 /data/attachments/*
+/data/sessions.json
 
 # typescript
 *.tsbuildinfo

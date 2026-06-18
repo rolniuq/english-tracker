@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Calendar } from "@/components/Calendar";
 import { SessionModal } from "@/components/SessionModal";
 
@@ -11,39 +11,45 @@ export interface Session {
   notes: string;
 }
 
-const STORAGE_KEY = "english-tracker-sessions";
-
-function loadSessions(): Session[] {
-  if (typeof window === "undefined") return [];
+async function loadSessions(): Promise<Session[]> {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return [];
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : Object.values(parsed);
+    const res = await fetch("/api/sessions");
+    if (!res.ok) return [];
+    return await res.json();
   } catch {
     return [];
   }
 }
 
-function saveSessions(sessions: Session[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+async function saveSessions(sessions: Session[]): Promise<void> {
+  await fetch("/api/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sessions),
+  });
 }
 
 export function TrackerApp() {
-  const [sessions, setSessions] = useState<Session[]>(() => loadSessions());
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
-  const refreshSessions = useCallback(() => {
-    setSessions(loadSessions());
+  useEffect(() => {
+    loadSessions().then((data) => {
+      setSessions(data);
+      setLoading(false);
+    });
   }, []);
 
-  const handleDayClick = useCallback((date: string) => {
-    setSelectedDate(date);
-    const all = loadSessions();
-    setSelectedSession(all.find((s) => s.date === date) || null);
-  }, []);
+  const handleDayClick = useCallback(
+    (date: string) => {
+      setSelectedDate(date);
+      setSelectedSession(sessions.find((s) => s.date === date) || null);
+    },
+    [sessions]
+  );
 
   const handleClose = useCallback(() => {
     setSelectedDate(null);
@@ -51,25 +57,37 @@ export function TrackerApp() {
   }, []);
 
   const handleSave = useCallback(
-    (attended: number, isOff: number, notes: string) => {
+    async (attended: number, isOff: number, notes: string) => {
       if (!selectedDate) return;
 
-      const all = loadSessions();
-      const existing = all.findIndex((s) => s.date === selectedDate);
+      const existing = sessions.findIndex((s) => s.date === selectedDate);
       const updated: Session = { date: selectedDate, attended, is_off: isOff, notes };
 
-      if (existing >= 0) {
-        all[existing] = updated;
-      } else {
-        all.push(updated);
-      }
-      saveSessions(all);
+      const newSessions =
+        existing >= 0
+          ? sessions.map((s, i) => (i === existing ? updated : s))
+          : [...sessions, updated];
 
+      setSessions(newSessions);
+      await saveSessions(newSessions);
       handleClose();
-      refreshSessions();
     },
-    [selectedDate, handleClose, refreshSessions]
+    [selectedDate, sessions, handleClose]
   );
+
+  if (loading) {
+    return (
+      <div className="app">
+        <header>
+          <h1>English Learning Tracker</h1>
+          <p className="subtitle">Ms. Jessica&apos;s Class</p>
+        </header>
+        <main>
+          <p className="loading-text">Loading...</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
