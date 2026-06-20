@@ -153,6 +153,11 @@ main {
   border-color: #3498db;
 }
 
+.day-cell.study-day {
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+}
+
 .day-number {
   font-weight: 500;
   font-size: 0.9rem;

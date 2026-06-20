@@ -1,6 +1,7 @@
 "use client";
 
 import { Session } from "./TrackerApp";
+import { STUDY_DAYS } from "@/lib/config";
 
 interface DayCellProps {
   date: string;
@@ -20,6 +21,8 @@ export function DayCell({
   const isLearned = session?.attended === 1;
   const isOff = session?.is_off === 1;
   const hasData = session && session.notes;
+  const dateObj = new Date(date + "T00:00:00");
+  const isStudyDay = STUDY_DAYS.includes(dateObj.getDay());
 
   let className = "day-cell";
   if (!isCurrentMonth) {
@@ -30,6 +33,8 @@ export function DayCell({
     className += " off";
   } else if (hasData) {
     className += " has-data";
+  } else if (isStudyDay) {
+    className += " study-day";
   }
 
   return (
