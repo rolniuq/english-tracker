@@ -232,20 +232,12 @@ main {
 }
 
 .attendance-section,
-.notes-section,
-.attachments-section {
+.notes-section {
   margin-bottom: 20px;
 }
 
 .attendance-section label,
 .notes-section label,
-.attachments-section label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #2c3e50;
-}
-
 .attendance-buttons {
   display: flex;
   gap: 10px;
@@ -289,54 +281,6 @@ main {
 .notes-section textarea:focus {
   outline: none;
   border-color: #3498db;
-}
-
-.attachments-list {
-  margin-bottom: 10px;
-}
-
-.attachment-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 10px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  margin-bottom: 6px;
-}
-
-.attachment-link {
-  color: #3498db;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.attachment-link:hover {
-  text-decoration: underline;
-}
-
-.delete-file-btn {
-  padding: 4px 10px;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.delete-file-btn:hover {
-  background: #c0392b;
-}
-
-.no-attachments {
-  color: #999;
-  font-size: 0.9rem;
-  font-style: italic;
-}
-
-.attachments-section input[type="file"] {
-  font-size: 0.9rem;
 }
 
 .modal-footer {
