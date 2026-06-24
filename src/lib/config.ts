@@ -1,1 +1,1 @@
-export const STUDY_DAYS = [1, 5, 6]; // Mon=1, Fri=5, Sat=6
+export const STUDY_DAYS = [3, 5, 6]; // Wed=3, Fri=5, Sat=6

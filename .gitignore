@@ -40,6 +40,9 @@ yarn-error.log*
 /data/attachments/*
 /data/sessions.json
 
+# backup
+backup-*.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
