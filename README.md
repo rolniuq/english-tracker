@@ -6,11 +6,14 @@ A calendar-based web app for tracking English learning sessions. Built with Next
 
 - **Calendar View** — Monthly calendar with color-coded days:
   - Green: Learned
+  - Amber: Switched (study day moved to another day)
   - Orange: Day off
   - Purple: Scheduled study day
   - Blue: Has notes
 
-- **Session Management** — Click any day to mark as learned, day off, or add notes.
+- **Session Management** — Click any day to mark as learned, switched, day off, or add notes.
+
+- **Stats Panel** — Quick overview of total learned, switched, and off days displayed below the calendar.
 
 - **Study Days Config** — Configure recurring study days in `src/lib/config.ts` (default: Monday, Friday, Saturday).
 

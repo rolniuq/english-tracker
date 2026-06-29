@@ -5,7 +5,7 @@
 - **Named exports only** — `export function Foo()`, never `export default`
 - **"use client" directive** — All components in `src/components/` are client components
 - **Interface co-location** — Define interfaces in the same file as the component that owns them; import from there
-  - Exception: `Session` interface lives in `TrackerApp.tsx` (the owner), imported by `Calendar.tsx`, `DayCell.tsx`, `SessionModal.tsx`
+  - Exception: `Session` interface lives in `src/lib/types.ts` (shared between app and API), imported by all consumers
 - **Props interface naming** — `{ComponentName}Props` (e.g. `DayCellProps`)
 
 ## CSS & Styling Rules
@@ -16,7 +16,7 @@
 - **Responsive** — Single breakpoint at 600px in globals.css
 - **DayCell class priority order** — This order is critical and must be preserved:
   ```
-  other-month > learned > off > has-data > study-day
+  other-month > learned > switched > off > has-data > study-day
   ```
 
 ## Data Flow Rules
@@ -25,7 +25,7 @@
 - **Unidirectional** — Data flows down via props, events flow up via callbacks
 - **API pattern** — GET on mount, POST on every save (replaces entire array)
 - **SessionModal key** — Always use `key={selectedDate}` to force remount on date change
-- **SessionModal mutual exclusion** — `attended` and `isOff` toggle each other off (Learned ⬌ Off)
+- **SessionModal mutual exclusion** — `attended`, `isSwitched`, and `isOff` toggle each other off (Learned ⬌ Switched ⬌ Off)
 
 ## Date Handling Rules
 

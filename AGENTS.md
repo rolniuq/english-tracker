@@ -27,9 +27,11 @@ jessica/
 │   │   ├── TrackerApp.tsx         # Root client component — owns state, API calls
 │   │   ├── Calendar.tsx           # Calendar grid with prev/next/today nav
 │   │   ├── DayCell.tsx            # Individual day cell with color logic
-│   │   └── SessionModal.tsx       # Modal popup for editing a day's session
+│   │   ├── SessionModal.tsx       # Modal popup for editing a day's session
+│   │   └── StatsPanel.tsx         # Stats panel (learned/switched/off counts)
 │   └── lib/
-│       └── config.ts              # Config: STUDY_DAYS (getDay() integers)
+│       ├── config.ts              # Config: STUDY_DAYS (getDay() integers)
+│       └── types.ts               # Shared Session interface
 ├── docs/superpowers/              # Design specs & implementation plans
 ├── AGENTS.md
 ├── RULES.md                       # Coding conventions & patterns
@@ -56,11 +58,14 @@ page.tsx
         │     └── DayCell × 42
         │           ├── props: date, day, session|null, isCurrentMonth, onClick
         │           ├── reads STUDY_DAYS from config to determine study-day class
-        │           └── CSS class priority: other-month > learned > off > has-data > study-day
+        │           └── CSS class priority: other-month > learned > switched > off > has-data > study-day
+        ├── StatsPanel
+        │     └── props: sessions[]
+        │     └── computes learned/switched/off counts
         └── SessionModal (when selectedDate is set)
               ├── props: date, session|null, onClose, onSave
-              ├── local state: attended, isOff, notes
-              ├── attended & isOff are mutually exclusive (toggling one disables the other)
+              ├── local state: attended, isSwitched, isOff, notes
+              ├── all three statuses are mutually exclusive (toggling one disables the others)
               └── onSave → TrackerApp updates sessions[] + POST /api/sessions
 ```
 
@@ -69,6 +74,7 @@ page.tsx
 ```js
 !isCurrentMonth → "other-month"     (grayed out, opacity 0.35)
 isLearned       → "learned"         (green)
+isSwitched      → "switched"        (amber)
 isOff           → "off"             (orange)
 hasData (notes) → "has-data"        (blue)
 isStudyDay      → "study-day"       (purple)
@@ -81,13 +87,14 @@ interface Session {
   date: string;      // "YYYY-MM-DD"
   attended: number;  // 1 = learned, 0 = not learned
   is_off: number;    // 1 = day off, 0 = not off
+  is_switched: number; // 1 = switched (study day moved to another day), 0 = not switched
   notes: string;     // free text
 }
 ```
 
 - Stored in Upstash Redis under key `sessions` as a JSON array
 - API replaces the entire array on POST (no partial updates)
-- `attended=1` and `is_off=1` are mutually exclusive (enforced in SessionModal)
+- `attended=1`, `is_switched=1`, and `is_off=1` are mutually exclusive (enforced in SessionModal)
 
 ## API
 

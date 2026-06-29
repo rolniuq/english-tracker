@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Session } from "./TrackerApp";
+import type { Session } from "@/lib/types";
 import { DayCell } from "./DayCell";
 
 interface CalendarProps {

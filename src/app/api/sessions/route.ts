@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
+import type { Session } from "@/lib/types";
 
 const KV_KEY = "sessions";
-
-interface Session {
-  date: string;
-  attended: number;
-  is_off: number;
-  notes: string;
-}
 
 async function readSessions(): Promise<Session[]> {
   try {

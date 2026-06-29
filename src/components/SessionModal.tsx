@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Session } from "./TrackerApp";
+import type { Session } from "@/lib/types";
 
 interface SessionModalProps {
   date: string;
   session: Session | null;
   onClose: () => void;
-  onSave: (attended: number, isOff: number, notes: string) => void;
+  onSave: (attended: number, isOff: number, isSwitched: number, notes: string) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -28,10 +28,11 @@ export function SessionModal({
 }: SessionModalProps) {
   const [attended, setAttended] = useState(session?.attended === 1);
   const [isOff, setIsOff] = useState(session?.is_off === 1);
+  const [isSwitched, setIsSwitched] = useState(session?.is_switched === 1);
   const [notes, setNotes] = useState(session?.notes || "");
 
   const handleSave = () => {
-    onSave(attended ? 1 : 0, isOff ? 1 : 0, notes);
+    onSave(attended ? 1 : 0, isOff ? 1 : 0, isSwitched ? 1 : 0, notes);
   };
 
   return (
@@ -52,16 +53,25 @@ export function SessionModal({
                 className={`attended-btn ${attended ? "active" : ""}`}
                 onClick={() => {
                   setAttended(!attended);
-                  if (!attended) setIsOff(false);
+                  if (!attended) { setIsOff(false); setIsSwitched(false); }
                 }}
               >
                 Learned
               </button>
               <button
+                className={`switched-btn ${isSwitched ? "active" : ""}`}
+                onClick={() => {
+                  setIsSwitched(!isSwitched);
+                  if (!isSwitched) { setAttended(false); setIsOff(false); }
+                }}
+              >
+                Switched
+              </button>
+              <button
                 className={`off-btn ${isOff ? "active" : ""}`}
                 onClick={() => {
                   setIsOff(!isOff);
-                  if (!isOff) setAttended(false);
+                  if (!isOff) { setAttended(false); setIsSwitched(false); }
                 }}
               >
                 Off

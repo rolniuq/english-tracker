@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import type { Session } from "@/lib/types";
 import { Calendar } from "@/components/Calendar";
 import { SessionModal } from "@/components/SessionModal";
-
-export interface Session {
-  date: string;
-  attended: number;
-  is_off: number;
-  notes: string;
-}
+import { StatsPanel } from "@/components/StatsPanel";
 
 async function loadSessions(): Promise<Session[]> {
   try {
@@ -57,11 +52,11 @@ export function TrackerApp() {
   }, []);
 
   const handleSave = useCallback(
-    async (attended: number, isOff: number, notes: string) => {
+    async (attended: number, isOff: number, isSwitched: number, notes: string) => {
       if (!selectedDate) return;
 
       const existing = sessions.findIndex((s) => s.date === selectedDate);
-      const updated: Session = { date: selectedDate, attended, is_off: isOff, notes };
+      const updated: Session = { date: selectedDate, attended, is_off: isOff, is_switched: isSwitched, notes };
 
       const newSessions =
         existing >= 0
@@ -102,6 +97,7 @@ export function TrackerApp() {
           onDateChange={setCurrentDate}
           onDayClick={handleDayClick}
         />
+        <StatsPanel sessions={sessions} />
       </main>
 
       {selectedDate && (
